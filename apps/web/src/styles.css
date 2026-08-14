@@ -1,0 +1,367 @@
+:root {
+  --bg: #f3f6f2;
+  --surface: #ffffff;
+  --ink: #17211c;
+  --ink-soft: #51605a;
+  --accent: #1f5c3f;
+  --accent-strong: #163f2b;
+  --line: #d7dfd8;
+  --crit: #a93a32;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  line-height: 1.5;
+}
+
+/*
+ * Logical properties throughout (inline-start/end, not left/right) so
+ * Hebrew (RTL, the default) and English (LTR) both mirror correctly from
+ * the same rules, per PRD section 7 — no LTR assumptions baked in.
+ */
+.page {
+  max-width: 640px;
+  margin-inline: auto;
+  padding: 24px 20px 64px;
+}
+
+.page-wide {
+  max-width: 880px;
+}
+
+.page-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-block-end: 8px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-block-end: 10px;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--accent);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-block-end: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.brand {
+  font-weight: 700;
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+.lang-switch {
+  display: flex;
+  gap: 6px;
+}
+
+.lang-switch button {
+  font-size: 0.8rem;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.lang-switch button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin-block-end: 18px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px;
+  margin-block-end: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-block-end: 14px;
+}
+
+.field label {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.field input {
+  padding: 9px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.field select,
+.field textarea {
+  padding: 9px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block-end: 14px;
+  font-size: 0.92rem;
+}
+
+.checkbox-row input {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+@media (max-width: 560px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+button.primary {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+button.primary:hover {
+  background: var(--accent-strong);
+}
+
+button.primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+button.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+  text-decoration: underline;
+}
+
+button.link.danger {
+  color: var(--crit);
+}
+
+button.secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 9px 15px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+button.secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.error {
+  color: var(--crit);
+  font-size: 0.88rem;
+  margin-block-end: 12px;
+}
+
+.cohort-row,
+.list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-block-end: 1px solid var(--line);
+}
+
+.cohort-row:last-child,
+.list-row:last-child {
+  border-block-end: none;
+}
+
+.cohort-name,
+.list-row-title {
+  font-weight: 600;
+}
+
+.list-row-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.list-row-title a:hover {
+  color: var(--accent);
+}
+
+.cohort-dates,
+.list-row-meta {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.pill {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.pill.published {
+  background: #e1f1e7;
+  border-color: #bfe0cc;
+  color: var(--accent-strong);
+}
+
+.pill.draft {
+  background: #f6ecd9;
+  border-color: #ecd7ab;
+  color: #96631a;
+}
+
+.muted {
+  color: var(--ink-soft);
+}
+
+.question-card {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 14px 16px;
+  margin-block-end: 12px;
+}
+
+.question-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.question-text {
+  font-weight: 600;
+  margin-block-end: 8px;
+}
+
+.option-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.option-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 3px;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+
+.option-list li.correct {
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block-end: 8px;
+}
+
+.option-row input[type="text"] {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.access-code {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--accent-strong);
+}

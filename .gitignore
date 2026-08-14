@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.local
+.DS_Store
+Thumbs.db
+coverage/
+.turbo/
+*.tsbuildinfo
+apps/api/generated/
+apps/api/dist-test/
+apps/api-tests/test-results/
+apps/api-tests/playwright-report/
+apps/api-tests/.cache/

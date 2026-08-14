@@ -1,0 +1,215 @@
+// BOHAN-PETA database schema — PRD section 5 / 9.2, v2.5.
+// Deviates from the PRD's raw-SQL starting point by using Prisma as the
+// migration + type-generation layer; field-for-field it mirrors the v2.5 DDL.
+
+generator client {
+  provider   = "prisma-client-js"
+  output     = "../generated/prisma"
+  // Rust/native-engine-free client, driven entirely through
+  // @prisma/adapter-pg (see prisma.service.ts) — the native x64 query
+  // engine binary can't load inside a native arm64 Node.js process
+  // (this dev machine is Windows-on-ARM).
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Teacher {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  cohorts       Cohort[]
+  quizTemplates QuizTemplate[]
+
+  @@map("teacher")
+}
+
+model Cohort {
+  id        String    @id @default(uuid())
+  teacherId String    @map("teacher_id")
+  teacher   Teacher   @relation(fields: [teacherId], references: [id])
+  name      String
+  startDate DateTime? @map("start_date") @db.Date
+  endDate   DateTime? @map("end_date") @db.Date
+  // F-20: cohorts are archived, not deleted, so historical scores stay intact.
+  archived  Boolean   @default(false)
+
+  assignments QuizAssignment[]
+
+  @@map("cohort")
+}
+
+enum QuizStatus {
+  draft
+  published
+
+  @@map("quiz_status")
+}
+
+enum QuizDifficulty {
+  easy
+  medium
+  hard
+
+  @@map("quiz_difficulty")
+}
+
+model QuizTemplate {
+  id                String         @id @default(uuid())
+  teacherId         String         @map("teacher_id")
+  teacher           Teacher        @relation(fields: [teacherId], references: [id])
+  title             String
+  language          String         @default("en")
+  difficulty        QuizDifficulty?
+  aiGenerated       Boolean        @default(false) @map("ai_generated")
+  status            QuizStatus     @default(draft)
+  teacherNotes      String?        @map("teacher_notes")
+  durationMinutes   Int            @default(30) @map("duration_minutes")
+  passScore         Decimal        @default(60) @map("pass_score") @db.Decimal(5, 2)
+  passFeedbackText  String?        @map("pass_feedback_text")
+  failFeedbackText  String?        @map("fail_feedback_text")
+  revealAnswerKey   Boolean        @default(false) @map("reveal_answer_key")
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  sources     QuizSource[]
+  questions   Question[]
+  assignments QuizAssignment[]
+
+  @@map("quiz_template")
+}
+
+enum QuizSourceType {
+  url
+  file
+
+  @@map("quiz_source_type")
+}
+
+model QuizSource {
+  id             String         @id @default(uuid())
+  quizTemplateId String         @map("quiz_template_id")
+  quizTemplate   QuizTemplate   @relation(fields: [quizTemplateId], references: [id], onDelete: Cascade)
+  sourceType     QuizSourceType @map("source_type")
+  url            String?
+  storageKey     String?        @map("storage_key")
+
+  @@map("quiz_source")
+}
+
+enum QuestionType {
+  single
+  multi
+
+  @@map("question_type")
+}
+
+model Question {
+  id             String       @id @default(uuid())
+  quizTemplateId String       @map("quiz_template_id")
+  quizTemplate   QuizTemplate @relation(fields: [quizTemplateId], references: [id], onDelete: Cascade)
+  text           String
+  type           QuestionType
+  sourceReference String?     @map("source_reference")
+  isActive       Boolean      @default(true) @map("is_active")
+  teacherNotes   String?      @map("teacher_notes")
+  imageUrl       String?      @map("image_url")
+  imagePrompt    String?      @map("image_prompt")
+  sortOrder      Int?         @map("sort_order")
+
+  options        AnswerOption[]
+  attemptAnswers AttemptAnswer[]
+
+  @@map("question")
+}
+
+model AnswerOption {
+  id         String   @id @default(uuid())
+  questionId String   @map("question_id")
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean  @default(false) @map("is_correct")
+
+  @@map("answer_option")
+}
+
+model QuizAssignment {
+  id             String       @id @default(uuid())
+  quizTemplateId String       @map("quiz_template_id")
+  quizTemplate   QuizTemplate @relation(fields: [quizTemplateId], references: [id])
+  cohortId       String       @map("cohort_id")
+  cohort         Cohort       @relation(fields: [cohortId], references: [id])
+  accessCode     String       @unique @map("access_code")
+  openAt         DateTime?    @map("open_at")
+  closeAt        DateTime?    @map("close_at")
+  maxAttempts    Int          @default(1) @map("max_attempts")
+  shuffle        Boolean      @default(true)
+
+  attempts Attempt[]
+
+  @@map("quiz_assignment")
+}
+
+model Student {
+  id         String  @id @default(uuid())
+  firstName  String  @map("first_name")
+  lastName   String  @map("last_name")
+  // v2.5 (F-03 fix): unique so the join flow can look up an existing
+  // Student by national_id instead of blindly inserting a new row —
+  // otherwise a re-registration under a new student_id would bypass the
+  // single-attempt rule enforced by Attempt's unique constraint below.
+  nationalId String  @unique @map("national_id")
+  email      String?
+
+  attempts Attempt[]
+
+  @@map("student")
+}
+
+enum AttemptEndedReason {
+  submitted
+  focus_loss
+  time_expired
+
+  @@map("attempt_ended_reason")
+}
+
+model Attempt {
+  id               String              @id @default(uuid())
+  quizAssignmentId String              @map("quiz_assignment_id")
+  quizAssignment   QuizAssignment      @relation(fields: [quizAssignmentId], references: [id])
+  studentId        String              @map("student_id")
+  student          Student             @relation(fields: [studentId], references: [id])
+  startedAt        DateTime            @default(now()) @map("started_at")
+  submittedAt      DateTime?           @map("submitted_at")
+  score            Decimal?            @db.Decimal(5, 2)
+  endedReason      AttemptEndedReason? @map("ended_reason")
+  // v2.5 / F-04d: shuffled question order, captured once at attempt start,
+  // so page numbering stays stable across navigation/resume instead of
+  // being re-shuffled on every GET /attempts/:id/questions call.
+  questionOrder    String[]            @map("question_order")
+
+  answers AttemptAnswer[]
+
+  // Enforces the single-attempt default from F-03. Only prevents a
+  // duplicate attempt once student_id is resolved consistently for the
+  // same person — see the Student.nationalId uniqueness note above.
+  @@unique([quizAssignmentId, studentId])
+  @@map("attempt")
+}
+
+model AttemptAnswer {
+  id                 String   @id @default(uuid())
+  attemptId          String   @map("attempt_id")
+  attempt            Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId         String   @map("question_id")
+  question           Question @relation(fields: [questionId], references: [id])
+  selectedOptionIds  String[] @map("selected_option_ids")
+
+  @@map("attempt_answer")
+}

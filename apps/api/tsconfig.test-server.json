@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist-test",
+    // A one-shot build per test run, not a long-lived dev process —
+    // incremental caching here has no benefit and, worse, an incremental
+    // cache that goes stale relative to dist-test/ (e.g. after a manual
+    // `rm -rf dist-test`) makes tsc silently under-emit files with no
+    // error, which is exactly the kind of failure that's painful to
+    // debug in CI. Always do a full compile instead.
+    "incremental": false
+  }
+}

@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bohanpeta
+      POSTGRES_PASSWORD: bohanpeta
+      POSTGRES_DB: bohanpeta
+    ports:
+      - "5432:5432"
+    volumes:
+      - bohanpeta_db_data:/var/lib/postgresql/data
+
+  # Separate instance for the Playwright API suite (apps/api-tests), so
+  # running tests never touches your dev data. A distinct container
+  # (not just a second database on the same instance) so it can be wiped
+  # independently without any risk to the dev DB.
+  db_test:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bohanpeta
+      POSTGRES_PASSWORD: bohanpeta
+      POSTGRES_DB: bohanpeta_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - bohanpeta_db_test_data:/var/lib/postgresql/data
+
+volumes:
+  bohanpeta_db_data:
+  bohanpeta_db_test_data:

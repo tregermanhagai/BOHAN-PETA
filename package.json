@@ -1,0 +1,23 @@
+{
+  "name": "bohan-peta",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace apps/api",
+    "dev:web": "npm run dev --workspace apps/web",
+    "build": "npm run build --workspace packages/shared-types && npm run build --workspace apps/api && npm run build --workspace apps/web",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:test:up": "docker compose up -d db_test",
+    "db:seed": "npm run seed --workspace apps/api",
+    "test:api": "npm run db:test:up --silent && npm run test --workspace apps/api-tests",
+    "test:api:ui": "npm run db:test:up --silent && npm run test:ui --workspace apps/api-tests"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
