@@ -1,6 +1,7 @@
 import { test, expect } from "../support/fixtures";
 import { uniqueEmail } from "../support/test-data";
-import { addQuestion, createDraftQuiz, createPublishedQuiz } from "../support/quiz-helpers";
+import { addQuestion, authHeader, createDraftQuiz, createPublishedQuiz } from "../support/quiz-helpers";
+import { createAssignment, createCohort, joinAttempt } from "../support/attempt-helpers";
 
 test.describe("POST /quiz-templates", () => {
   test("creates a draft quiz with sane defaults", async ({ authedRequest, teacher }) => {
@@ -251,5 +252,49 @@ test.describe("PATCH /quiz-templates/:id/status — Edit <-> Execution (3.4)", (
     const res = await authedRequest.patch(`/quiz-templates/${quiz.id}/status`, { data: { status: "draft" } });
     expect(res.status()).toBe(200);
     expect((await res.json()).status).toBe("draft");
+  });
+});
+
+test.describe("DELETE /quiz-templates/:id", () => {
+  test("deletes a quiz with no assignments", async ({ authedRequest }) => {
+    const quiz = await createDraftQuiz(authedRequest);
+    const res = await authedRequest.delete(`/quiz-templates/${quiz.id}`);
+    expect(res.status()).toBe(204);
+
+    const getRes = await authedRequest.get(`/quiz-templates/${quiz.id}`);
+    expect(getRes.status()).toBe(404);
+  });
+
+  test("cascades through assignments and attempts (no FK errors), leaving the cohort intact", async ({
+    authedRequest,
+    request,
+  }) => {
+    const quiz = await createPublishedQuiz(authedRequest);
+    const cohort = await createCohort(authedRequest);
+    const assignment = await createAssignment(authedRequest, cohort.id, { quizTemplateId: quiz.id });
+    await joinAttempt(request, { accessCode: assignment.accessCode });
+
+    const res = await authedRequest.delete(`/quiz-templates/${quiz.id}`);
+    expect(res.status()).toBe(204);
+
+    const cohortRes = await authedRequest.get(`/cohorts/${cohort.id}`);
+    expect(cohortRes.status()).toBe(200);
+    const assignmentsRes = await authedRequest.get(`/cohorts/${cohort.id}/assignments`);
+    expect(await assignmentsRes.json()).toEqual([]);
+  });
+
+  test("cannot delete a quiz you don't own (404)", async ({ authedRequest, request }) => {
+    const otherEmail = uniqueEmail("other");
+    const otherRegister = await request.post("/auth/register", {
+      data: { name: "Owner", email: otherEmail, password: "correct-horse-battery-staple" },
+    });
+    const { accessToken: otherToken } = await otherRegister.json();
+    const otherQuiz = await createDraftQuiz(request, "Not yours", authHeader(otherToken));
+
+    const res = await authedRequest.delete(`/quiz-templates/${otherQuiz.id}`);
+    expect(res.status()).toBe(404);
+
+    const stillThere = await request.get(`/quiz-templates/${otherQuiz.id}`, { headers: authHeader(otherToken) });
+    expect(stillThere.status()).toBe(200);
   });
 });

@@ -4,6 +4,7 @@
  */
 import type {
   AnswerOption,
+  AttemptEndedReason,
   Cohort,
   Question,
   QuizAssignment,
@@ -106,3 +107,111 @@ export interface CreateQuizAssignmentRequest {
 }
 
 export type QuizAssignmentResponse = QuizAssignment & { quizTemplateTitle: string };
+
+// ---------------------------------------------------------------
+// Student join & attempts (F-01–F-08a, PRD 3.1/3.7/3.8, v2.5)
+// ---------------------------------------------------------------
+
+export interface JoinAttemptRequest {
+  firstName: string;
+  lastName: string;
+  /** Format-validated server-side (F-02); default Israeli ID checksum. */
+  nationalId: string;
+  email?: string | null;
+  accessCode: string;
+}
+
+export interface JoinAttemptResponse {
+  attemptId: string;
+  quizTitle: string;
+  durationMinutes: number;
+  questionCount: number;
+}
+
+/** Client-safe — never carries which option is correct (3.1 exam-taking view). */
+export interface AttemptOptionView {
+  id: string;
+  text: string;
+}
+
+export interface AttemptQuestionView {
+  id: string;
+  text: string;
+  type: QuestionType;
+  options: AttemptOptionView[];
+  /** Already-saved answer, if any — powers resume (F-05). */
+  selectedOptionIds: string[];
+}
+
+export interface AttemptQuestionsResponse {
+  questions: AttemptQuestionView[];
+  startedAt: string;
+  durationMinutes: number;
+  /** Non-null if the server has already closed this attempt (e.g. time
+   *  expired since the last request) — client should show the result
+   *  screen instead of continuing the exam. */
+  endedReason: AttemptEndedReason | null;
+}
+
+export interface SaveAnswerRequest {
+  selectedOptionIds: string[];
+}
+
+export interface AttemptResultResponse {
+  score: number;
+  passed: boolean;
+  feedbackText: string;
+  endedReason: AttemptEndedReason;
+  /** The Attempt UUID itself — the bearer token for the review link (3.1). */
+  reviewToken: string;
+}
+
+export interface AttemptReviewOption {
+  id: string;
+  text: string;
+  /** Present only when the quiz's reveal_answer_key is on (F-07b). */
+  isCorrect?: boolean;
+}
+
+export interface AttemptReviewQuestion {
+  id: string;
+  text: string;
+  type: QuestionType;
+  options: AttemptReviewOption[];
+  selectedOptionIds: string[];
+  correct: boolean;
+}
+
+export interface AttemptReviewResponse {
+  score: number;
+  passed: boolean;
+  feedbackText: string;
+  endedReason: AttemptEndedReason;
+  revealAnswerKey: boolean;
+  questions: AttemptReviewQuestion[];
+}
+
+// ---------------------------------------------------------------
+// Cohort scores (F-23/F-24, PRD 3.3/5.3)
+// ---------------------------------------------------------------
+
+/** Distinct from AttemptEndedReason only by adding "in_progress" — an attempt with no ended reason yet. */
+export type AttemptStatus = "in_progress" | AttemptEndedReason;
+
+export interface ScoreRow {
+  attemptId: string;
+  studentId: string;
+  studentName: string;
+  nationalId: string;
+  quizAssignmentId: string;
+  quizTemplateId: string;
+  quizTitle: string;
+  status: AttemptStatus;
+  score: number | null;
+  passed: boolean | null;
+  startedAt: string;
+  submittedAt: string | null;
+  timeTakenSeconds: number | null;
+}
+
+export type CohortScoresResponse = ScoreRow[];

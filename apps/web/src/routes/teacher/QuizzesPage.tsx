@@ -38,6 +38,16 @@ export function QuizzesPage() {
     }
   }
 
+  async function onDelete(quiz: QuizTemplateSummaryResponse) {
+    if (!confirm(t("quizzes.deleteConfirm", { title: quiz.title }))) return;
+    try {
+      await api.delete(`/quiz-templates/${quiz.id}`);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not delete quiz");
+    }
+  }
+
   return (
     <div className="page">
       <h1>{t("quizzes.title")}</h1>
@@ -70,6 +80,9 @@ export function QuizzesPage() {
                 </div>
                 <div className="list-row-meta">{t("quizzes.questionCount", { count: q.questionCount })}</div>
               </div>
+              <button className="link danger" type="button" onClick={() => onDelete(q)}>
+                {t("common.delete")}
+              </button>
             </div>
           ))}
       </div>

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { CurrentTeacher, CurrentTeacherPayload } from "../auth/current-teacher.decorator";
 import { QuizTemplatesService } from "./quiz-templates.service";
@@ -81,5 +81,11 @@ export class QuizTemplatesController {
     @Param("qid") qid: string,
   ) {
     return this.quizTemplates.deleteQuestion(teacher.id, id, qid);
+  }
+
+  @Delete(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@CurrentTeacher() teacher: CurrentTeacherPayload, @Param("id") id: string) {
+    return this.quizTemplates.remove(teacher.id, id);
   }
 }

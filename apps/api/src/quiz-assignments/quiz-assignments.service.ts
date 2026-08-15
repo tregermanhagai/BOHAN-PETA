@@ -64,6 +64,21 @@ export class QuizAssignmentsService {
     return rows.map((row) => toResponse(row, row.quizTemplate.title));
   }
 
+  async remove(teacherId: string, cohortId: string, assignmentId: string): Promise<void> {
+    await this.getOwnedCohortOrThrow(teacherId, cohortId);
+    const assignment = await this.prisma.quizAssignment.findFirst({
+      where: { id: assignmentId, cohortId },
+    });
+    if (!assignment) {
+      throw new NotFoundException("Assignment not found");
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.attempt.deleteMany({ where: { quizAssignmentId: assignmentId } }),
+      this.prisma.quizAssignment.delete({ where: { id: assignmentId } }),
+    ]);
+  }
+
   private async getOwnedCohortOrThrow(teacherId: string, cohortId: string) {
     const cohort = await this.prisma.cohort.findFirst({ where: { id: cohortId, teacherId } });
     if (!cohort) {

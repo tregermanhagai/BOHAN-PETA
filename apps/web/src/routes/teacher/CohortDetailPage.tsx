@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import type {
   CohortResponse,
   QuizAssignmentResponse,
@@ -11,6 +11,7 @@ import { api, ApiError } from "../../lib/api-client";
 export function CohortDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const [cohort, setCohort] = useState<CohortResponse | null>(null);
   const [assignments, setAssignments] = useState<QuizAssignmentResponse[] | null>(null);
@@ -64,6 +65,33 @@ export function CohortDetailPage() {
     }
   }
 
+  async function onDeleteCohort() {
+    if (!id || !cohort) return;
+    if (!confirm(t("cohorts.deleteConfirm", { name: cohort.name }))) return;
+    try {
+      await api.delete(`/cohorts/${id}`);
+      navigate("/cohorts");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not delete cohort");
+    }
+  }
+
+  async function onDeleteAssignment(assignment: QuizAssignmentResponse) {
+    if (!id) return;
+    if (!confirm(t("assignments.deleteConfirm", { quiz: assignment.quizTemplateTitle }))) return;
+    try {
+      await api.delete(`/cohorts/${id}/assignments/${assignment.id}`);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not delete assignment");
+    }
+  }
+
+  const selectedQuiz = useMemo(
+    () => quizzes?.find((q) => q.id === selectedQuizId) ?? null,
+    [quizzes, selectedQuizId],
+  );
+
   if (!cohort) return <div className="page muted">{t("common.loading")}</div>;
 
   return (
@@ -71,7 +99,17 @@ export function CohortDetailPage() {
       <Link className="back-link" to="/cohorts">
         {t("cohorts.backToList")}
       </Link>
-      <h1>{cohort.name}</h1>
+      <div className="page-head">
+        <h1>{cohort.name}</h1>
+        <div className="form-actions">
+          <Link className="secondary" to={`/cohorts/${id}/scores`}>
+            {t("scores.title")}
+          </Link>
+          <button className="link danger" type="button" onClick={onDeleteCohort}>
+            {t("cohorts.delete")}
+          </button>
+        </div>
+      </div>
 
       <div className="card">
         <h2>{t("assignments.create")}</h2>
@@ -93,6 +131,12 @@ export function CohortDetailPage() {
                   </option>
                 ))}
               </select>
+              {selectedQuiz && (
+                <span className="muted">
+                  {t("assignments.quizDuration", { minutes: selectedQuiz.durationMinutes })}{" "}
+                  <Link to={`/quizzes/${selectedQuiz.id}`}>{t("assignments.quizDurationEdit")}</Link>
+                </span>
+              )}
             </div>
             <div className="settings-grid">
               <div className="field">
@@ -144,20 +188,29 @@ export function CohortDetailPage() {
         <h2>{t("assignments.title")}</h2>
         {assignments === null && <p className="muted">{t("common.loading")}</p>}
         {assignments !== null && assignments.length === 0 && <p className="muted">{t("assignments.empty")}</p>}
-        {assignments?.map((a) => (
+        {assignments?.map((a) => {
+          const quiz = quizzes?.find((q) => q.id === a.quizTemplateId);
+          return (
           <div className="list-row" key={a.id}>
             <div>
-              <div className="list-row-title">{a.quizTemplateTitle}</div>
+              <div className="list-row-title">
+                <Link to={`/quizzes/${a.quizTemplateId}`}>{a.quizTemplateTitle}</Link>
+              </div>
               <div className="list-row-meta">
                 {a.openAt ?? "—"} – {a.closeAt ?? "—"} · {t("assignments.maxAttempts")}: {a.maxAttempts}
+                {quiz && <> · {t("assignments.quizDuration", { minutes: quiz.durationMinutes })}</>}
               </div>
             </div>
             <div>
               <div className="access-code">{a.accessCode}</div>
               <div className="list-row-meta">{t("assignments.accessCodeHint")}</div>
             </div>
+            <button className="link danger" type="button" onClick={() => onDeleteAssignment(a)}>
+              {t("common.delete")}
+            </button>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

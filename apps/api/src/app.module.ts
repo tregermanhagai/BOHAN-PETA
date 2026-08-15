@@ -8,6 +8,7 @@ import { StudentsModule } from "./students/students.module";
 import { QuizTemplatesModule } from "./quiz-templates/quiz-templates.module";
 import { QuizAssignmentsModule } from "./quiz-assignments/quiz-assignments.module";
 import { AttemptsModule } from "./attempts/attempts.module";
+import { ScoresModule } from "./scores/scores.module";
 import { AiGenerationModule } from "./ai-generation/ai-generation.module";
 
 @Module({
@@ -20,6 +21,7 @@ import { AiGenerationModule } from "./ai-generation/ai-generation.module";
     QuizTemplatesModule,
     QuizAssignmentsModule,
     AttemptsModule,
+    ScoresModule,
     AiGenerationModule,
   ],
   controllers: [HealthController],

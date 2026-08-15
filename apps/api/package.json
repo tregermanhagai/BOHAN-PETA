@@ -9,7 +9,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "seed:sample": "tsx prisma/seed-sample-quiz.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

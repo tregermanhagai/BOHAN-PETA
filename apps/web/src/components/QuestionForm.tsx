@@ -88,7 +88,7 @@ export function QuestionForm({
 
       <div className="field">
         <label htmlFor="q-text">{t("question.text")}</label>
-        <textarea id="q-text" required value={text} onChange={(e) => setText(e.target.value)} />
+        <textarea id="q-text" dir="auto" required value={text} onChange={(e) => setText(e.target.value)} />
       </div>
 
       <div className="field">
@@ -112,6 +112,7 @@ export function QuestionForm({
             />
             <input
               type="text"
+              dir="auto"
               required
               placeholder={t("question.optionText")}
               value={opt.text}

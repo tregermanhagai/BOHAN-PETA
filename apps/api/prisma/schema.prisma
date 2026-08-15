@@ -196,10 +196,12 @@ model Attempt {
 
   answers AttemptAnswer[]
 
-  // Enforces the single-attempt default from F-03. Only prevents a
-  // duplicate attempt once student_id is resolved consistently for the
-  // same person — see the Student.nationalId uniqueness note above.
-  @@unique([quizAssignmentId, studentId])
+  // Not unique: QuizAssignment.maxAttempts can be > 1, so more than one
+  // Attempt row per (assignment, student) is valid. The single/max-
+  // attempt rule (F-03) is enforced in AttemptsService against this
+  // index at join time, not by a DB constraint — see PRD 9.2's own note
+  // that a hard unique here only works for the maxAttempts=1 default.
+  @@index([quizAssignmentId, studentId])
   @@map("attempt")
 }
 
@@ -211,5 +213,8 @@ model AttemptAnswer {
   question           Question @relation(fields: [questionId], references: [id])
   selectedOptionIds  String[] @map("selected_option_ids")
 
+  // Lets answer-saving be a plain upsert keyed on (attempt, question)
+  // rather than "find existing row, then update or create".
+  @@unique([attemptId, questionId])
   @@map("attempt_answer")
 }

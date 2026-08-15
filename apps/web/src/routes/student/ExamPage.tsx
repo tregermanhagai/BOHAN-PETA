@@ -1,0 +1,232 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import type { AttemptQuestionView, AttemptQuestionsResponse, AttemptResultResponse } from "@bohan-peta/shared-types";
+import { api, ApiError } from "../../lib/api-client";
+import { useAuth } from "../../auth/AuthContext";
+
+const FOCUS_LOSS_GRACE_MS = 3000;
+
+function formatTime(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+export function ExamPage() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { isAuthenticated } = useAuth();
+
+  const [questions, setQuestions] = useState<AttemptQuestionView[] | null>(null);
+  const [deadline, setDeadline] = useState<number | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  // Ref, not state: the ending flag must be read synchronously inside
+  // event handlers (timer tick, blur) to guarantee submit fires exactly
+  // once, which a state update (async/batched) can't guarantee.
+  const endingRef = useRef(false);
+
+  const finishAttempt = useCallback(
+    async (endpoint: "submit" | "auto-submit") => {
+      if (!id || endingRef.current) return;
+      endingRef.current = true;
+      try {
+        const result = await api.post<AttemptResultResponse>(`/attempts/${id}/${endpoint}`, undefined, {
+          auth: false,
+        });
+        navigate(`/attempt/${id}/result`, { state: result });
+      } catch (err) {
+        endingRef.current = false;
+        setError(err instanceof ApiError ? err.message : "Could not submit the exam");
+      }
+    },
+    [id, navigate],
+  );
+
+  // Initial load.
+  useEffect(() => {
+    if (!id) return;
+    api
+      .get<AttemptQuestionsResponse>(`/attempts/${id}/questions`, { auth: false })
+      .then((data) => {
+        if (data.endedReason) {
+          // Already over (e.g. reload after time-out) — submit is
+          // idempotent, so this just fetches the existing result.
+          finishAttempt("submit");
+          return;
+        }
+        setQuestions(data.questions);
+        setDeadline(new Date(data.startedAt).getTime() + data.durationMinutes * 60_000);
+      })
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Could not load the exam"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // Server-authoritative countdown display (3.7) — the timer here is a
+  // convenience; hitting zero just calls the normal submit endpoint,
+  // which independently re-checks the deadline server-side regardless
+  // of what this client clock says.
+  useEffect(() => {
+    if (deadline === null) return;
+    function tick() {
+      const remaining = Math.max(0, Math.round(((deadline as number) - Date.now()) / 1000));
+      setRemainingSeconds(remaining);
+      if (remaining <= 0) finishAttempt("submit");
+    }
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [deadline, finishAttempt]);
+
+  // Focus-loss auto-submit with a short grace period (v2.5, 3.8) — absorbs
+  // a brief notification-shade peek or address-bar tap without ending a
+  // genuine app-switch any less promptly.
+  useEffect(() => {
+    let graceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function startGrace() {
+      if (graceTimer || endingRef.current) return;
+      graceTimer = setTimeout(() => finishAttempt("auto-submit"), FOCUS_LOSS_GRACE_MS);
+    }
+    function cancelGrace() {
+      if (graceTimer) {
+        clearTimeout(graceTimer);
+        graceTimer = null;
+      }
+    }
+    function onVisibilityChange() {
+      if (document.hidden) startGrace();
+      else cancelGrace();
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("blur", startGrace);
+    window.addEventListener("focus", cancelGrace);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("blur", startGrace);
+      window.removeEventListener("focus", cancelGrace);
+      cancelGrace();
+    };
+  }, [finishAttempt]);
+
+  function updateAnswer(questionId: string, selectedOptionIds: string[]) {
+    setQuestions((prev) =>
+      prev ? prev.map((q) => (q.id === questionId ? { ...q, selectedOptionIds } : q)) : prev,
+    );
+    api.put(`/attempts/${id}/answers/${questionId}`, { selectedOptionIds }, { auth: false }).catch((err) => {
+      setError(err instanceof ApiError ? err.message : "Could not save your answer");
+    });
+  }
+
+  function toggleOption(question: AttemptQuestionView, optionId: string) {
+    if (question.type === "single") {
+      updateAnswer(question.id, [optionId]);
+    } else {
+      const has = question.selectedOptionIds.includes(optionId);
+      const next = has
+        ? question.selectedOptionIds.filter((o) => o !== optionId)
+        : [...question.selectedOptionIds, optionId];
+      updateAnswer(question.id, next);
+    }
+  }
+
+  function onSubmitClick() {
+    if (confirm(t("exam.submitConfirm"))) finishAttempt("submit");
+  }
+
+  if (error && !questions) return <div className="page error">{error}</div>;
+  if (!questions) return <div className="page muted">{t("exam.loading")}</div>;
+
+  const question = questions[currentIndex];
+  const isLast = currentIndex === questions.length - 1;
+
+  return (
+    <div className="page">
+      <div className="exam-topbar">
+        <span className="muted">{t("exam.questionOf", { current: currentIndex + 1, total: questions.length })}</span>
+        {remainingSeconds !== null && (
+          <span className="exam-timer">
+            {t("exam.timeLeft")}: {formatTime(remainingSeconds)}
+          </span>
+        )}
+      </div>
+      {isAuthenticated && (
+        <div className="exam-teacher-link">
+          <Link to="/cohorts">{t("exam.teacherLink")}</Link>
+        </div>
+      )}
+
+      <div className="question-navigator">
+        {questions.map((q, i) => (
+          <button
+            key={q.id}
+            type="button"
+            className={`nav-dot ${i === currentIndex ? "current" : ""} ${q.selectedOptionIds.length > 0 ? "answered" : ""}`}
+            onClick={() => setCurrentIndex(i)}
+          >
+            {i + 1}
+          </button>
+        ))}
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <div className="card">
+        <div className="question-text" dir="auto">
+          {question.text}
+        </div>
+        <p className="muted">{question.type === "single" ? t("exam.selectOne") : t("exam.selectMultiple")}</p>
+        <ul className="answer-choice-list">
+          {question.options.map((opt) => {
+            const checked = question.selectedOptionIds.includes(opt.id);
+            return (
+              <li key={opt.id}>
+                <label className="answer-choice">
+                  <input
+                    type={question.type === "single" ? "radio" : "checkbox"}
+                    name={`q-${question.id}`}
+                    checked={checked}
+                    onChange={() => toggleOption(question, opt.id)}
+                  />
+                  <span className="answer-choice-text" dir="auto">
+                    {opt.text}
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+        {question.selectedOptionIds.length === 0 && <p className="muted">{t("exam.unanswered")}</p>}
+      </div>
+
+      <div className="form-actions">
+        <button
+          className="secondary"
+          type="button"
+          disabled={currentIndex === 0}
+          onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+        >
+          {t("exam.previous")}
+        </button>
+        <button
+          className="secondary"
+          type="button"
+          disabled={isLast}
+          onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
+        >
+          {t("exam.next")}
+        </button>
+        {isLast && (
+          <button className="primary" type="button" onClick={onSubmitClick}>
+            {t("exam.submit")}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

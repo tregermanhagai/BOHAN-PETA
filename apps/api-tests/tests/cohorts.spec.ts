@@ -1,5 +1,6 @@
 import { test, expect } from "../support/fixtures";
 import { uniqueCohortName, uniqueEmail } from "../support/test-data";
+import { setUpExamReadyQuiz } from "../support/attempt-helpers";
 
 test.describe("POST /cohorts", () => {
   test("creates a cohort with just a name", async ({ authedRequest, teacher }) => {
@@ -148,5 +149,57 @@ test.describe("PATCH /cohorts/:id", () => {
       headers: { Authorization: `Bearer ${otherToken}` },
     });
     expect((await stillOriginal.json()).name).toBe(otherCohort.name);
+  });
+});
+
+test.describe("DELETE /cohorts/:id", () => {
+  test("deletes a cohort with no assignments", async ({ authedRequest }) => {
+    const created = await (await authedRequest.post("/cohorts", { data: { name: uniqueCohortName() } })).json();
+
+    const res = await authedRequest.delete(`/cohorts/${created.id}`);
+    expect(res.status()).toBe(204);
+
+    const getRes = await authedRequest.get(`/cohorts/${created.id}`);
+    expect(getRes.status()).toBe(404);
+  });
+
+  test("cascades through assignments and attempts (no FK errors)", async ({ authedRequest, request }) => {
+    const { cohort, assignment } = await setUpExamReadyQuiz(authedRequest);
+    await request.post("/assignments/join", {
+      data: {
+        firstName: "To",
+        lastName: "BeDeleted",
+        nationalId: "300000007",
+        accessCode: assignment.accessCode,
+      },
+    });
+
+    const res = await authedRequest.delete(`/cohorts/${cohort.id}`);
+    expect(res.status()).toBe(204);
+
+    const assignmentsRes = await authedRequest.get(`/cohorts/${cohort.id}/assignments`);
+    expect(assignmentsRes.status()).toBe(404);
+  });
+
+  test("cannot delete a cohort you don't own (404)", async ({ authedRequest, request }) => {
+    const otherEmail = uniqueEmail("other");
+    const otherRegister = await request.post("/auth/register", {
+      data: { name: "Owner", email: otherEmail, password: "correct-horse-battery-staple" },
+    });
+    const { accessToken: otherToken } = await otherRegister.json();
+    const otherCohort = await (
+      await request.post("/cohorts", {
+        data: { name: uniqueCohortName() },
+        headers: { Authorization: `Bearer ${otherToken}` },
+      })
+    ).json();
+
+    const res = await authedRequest.delete(`/cohorts/${otherCohort.id}`);
+    expect(res.status()).toBe(404);
+
+    const stillThere = await request.get(`/cohorts/${otherCohort.id}`, {
+      headers: { Authorization: `Bearer ${otherToken}` },
+    });
+    expect(stillThere.status()).toBe(200);
   });
 });

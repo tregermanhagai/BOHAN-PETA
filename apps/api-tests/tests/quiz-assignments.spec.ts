@@ -125,3 +125,55 @@ test.describe("GET /cohorts/:cohortId/assignments", () => {
     expect(await res.json()).toEqual([]);
   });
 });
+
+test.describe("DELETE /cohorts/:cohortId/assignments/:id", () => {
+  test("deletes an assignment", async ({ authedRequest }) => {
+    const cohort = await createCohort(authedRequest);
+    const quiz = await createPublishedQuiz(authedRequest);
+    const assignment = await (
+      await authedRequest.post(`/cohorts/${cohort.id}/assignments`, { data: { quizTemplateId: quiz.id } })
+    ).json();
+
+    const res = await authedRequest.delete(`/cohorts/${cohort.id}/assignments/${assignment.id}`);
+    expect(res.status()).toBe(204);
+
+    const list = await (await authedRequest.get(`/cohorts/${cohort.id}/assignments`)).json();
+    expect(list).toEqual([]);
+  });
+
+  test("404s for an assignment that doesn't belong to the cohort", async ({ authedRequest }) => {
+    const cohortA = await createCohort(authedRequest);
+    const cohortB = await createCohort(authedRequest);
+    const quiz = await createPublishedQuiz(authedRequest);
+    const assignment = await (
+      await authedRequest.post(`/cohorts/${cohortA.id}/assignments`, { data: { quizTemplateId: quiz.id } })
+    ).json();
+
+    const res = await authedRequest.delete(`/cohorts/${cohortB.id}/assignments/${assignment.id}`);
+    expect(res.status()).toBe(404);
+  });
+
+  test("cannot delete an assignment under a cohort you don't own (404)", async ({ authedRequest, request }) => {
+    const otherEmail = uniqueEmail("other");
+    const otherRegister = await request.post("/auth/register", {
+      data: { name: "Owner", email: otherEmail, password: "correct-horse-battery-staple" },
+    });
+    const { accessToken: otherToken } = await otherRegister.json();
+    const otherCohort = await (
+      await request.post("/cohorts", {
+        data: { name: uniqueCohortName() },
+        headers: authHeader(otherToken),
+      })
+    ).json();
+    const otherQuiz = await createPublishedQuiz(request, "Other quiz", authHeader(otherToken));
+    const otherAssignment = await (
+      await request.post(`/cohorts/${otherCohort.id}/assignments`, {
+        data: { quizTemplateId: otherQuiz.id },
+        headers: authHeader(otherToken),
+      })
+    ).json();
+
+    const res = await authedRequest.delete(`/cohorts/${otherCohort.id}/assignments/${otherAssignment.id}`);
+    expect(res.status()).toBe(404);
+  });
+});

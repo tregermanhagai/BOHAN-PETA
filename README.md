@@ -4,7 +4,9 @@ Digital quiz platform for course cohorts. See `BOHAN-PETA_PRD_SRS.docx` (v2.5) f
 
 ## Status
 
-**Build slice 1 of the section 9.4 plan is done:** teacher auth + cohort CRUD, backend and frontend, end to end, plus a Playwright test suite covering the API. Everything else (manual quiz authoring, student exam flow, scores/export, AI generation, import/export) is stubbed as empty modules in `apps/api/src/*` ready for the next slice — see the comment at the top of each stub module for what it covers.
+**Build slices 1–4 of the section 9.4 plan are done:** teacher auth, cohort CRUD (incl. delete), manual quiz authoring with the Edit/Execution publish lifecycle, quiz-to-cohort assignment (incl. delete), and the full student exam flow — join, paginated exam UI, server-side time enforcement, focus-loss auto-submit with a grace period, scoring, and the review link. All covered by a Playwright suite against the real API.
+
+Not built yet: scores/export view, AI-assisted generation, JSON/Excel import-export. Each has an empty stub module in `apps/api/src/*` — see the comment at the top of each for what it covers.
 
 ## Stack
 
@@ -28,6 +30,10 @@ npx prisma generate --schema apps/api/prisma/schema.prisma
 npx prisma migrate dev --schema apps/api/prisma/schema.prisma --name init
 ```
 
+To seed a teacher/admin account: `npm run db:seed` (see `apps/api/prisma/seed.ts`) — prints a generated password once, or set `SEED_ADMIN_PASSWORD` in `apps/api/.env` first to choose your own.
+
+To seed a ready-to-take sample exam under that account (a "Sample Cohort" with a published 3-question quiz assigned to it): `npm run db:seed:sample` — prints the access code to use at `/join`. Safe to re-run; reuses the same cohort/quiz/assignment instead of duplicating them.
+
 ## Running locally (PC — QA stage 1)
 
 Two terminals, from the repo root:
@@ -37,7 +43,7 @@ npm run dev:api    # http://localhost:3000
 npm run dev:web    # http://localhost:5173
 ```
 
-Open `http://localhost:5173`, register a teacher account, create a cohort.
+Open `http://localhost:5173`, register a teacher account, create a cohort. Students join at `/join` with the access code from a cohort's assignment.
 
 ## Running on your phone (Samsung Galaxy S24 FE — QA stage 2)
 
@@ -59,7 +65,7 @@ Should return `{"status":"ok","db":"connected",...}`.
 
 ## Running the API test suite
 
-A Playwright suite (`apps/api-tests`) covers `/health`, `/auth/*`, and `/cohorts/*` — registration validation, login, JWT guard behavior, CRUD, and cross-teacher data isolation. No browser install needed; it only uses Playwright's `request` fixture against the raw API.
+A Playwright suite (`apps/api-tests`) covers `/health`, `/auth/*`, `/cohorts/*`, `/quiz-templates/*`, `/cohorts/:id/assignments/*`, `/assignments/join`, and `/attempts/*` — validation, JWT/ownership isolation, CRUD, publish-lifecycle rules, exam scoring (incl. the all-or-nothing multi-select rule), server-side time-expiry, and delete cascades. No browser install needed; it only uses Playwright's `request` fixture against the raw API.
 
 ```bash
 npm run test:api       # headless, prints a list report
@@ -72,6 +78,19 @@ This runs against a **separate** API instance (port 3001) and a **separate** Pos
 
 This environment is Windows-on-ARM. Prisma's native query-engine binary can't load inside an arm64 Node.js process, so `apps/api/prisma/schema.prisma` uses `engineType = "client"` (Prisma's Rust-free client) with `@prisma/adapter-pg` driving queries through `pg` instead — see the comment in `apps/api/src/prisma/prisma.service.ts`. This isn't a workaround specific to one machine's quirks so much as where Prisma's architecture is headed anyway (it's the default in Prisma 7); nothing here needs revisiting when moving to an x64 machine or to production.
 
+## Troubleshooting: `npm run dev:api` fails with "Cannot find module .../dist/main"
+
+`nest start --watch` compiles to a real `dist/` folder and spawns a child `node dist/main.js` process — but doesn't always clean up that child when you stop it (Ctrl+C, or killing the terminal). Restart it enough times over a session and orphaned instances pile up, all racing to rewrite the same `dist/` folder, which produces exactly this error on the next start. Fix:
+
+```powershell
+# Windows — kill only this project's orphaned nest processes, nothing else
+Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
+  Where-Object { $_.CommandLine -like "*nest.js*start*watch*" } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+```
+
+Then delete `apps/api/dist` and `apps/api/tsconfig.tsbuildinfo` and re-run `npm run dev:api`. (`pkill -f "nest start"` from Git Bash only kills the CLI wrapper, not the spawned child — it won't fully fix this on its own.)
+
 ## Repo layout
 
 ```
@@ -79,7 +98,7 @@ apps/
   web/            React + Vite PWA — student + teacher UI
   api/            NestJS backend
     prisma/       schema.prisma — source of truth for the DB schema
-    src/modules/  one folder per PRD domain (auth, cohorts, students, quiz-templates, ...)
+    src/modules/  one folder per PRD domain (auth, cohorts, students, quiz-templates, attempts, ...)
   api-tests/      Playwright suite testing the API directly
 packages/
   shared-types/   TS types shared between web, api, and api-tests

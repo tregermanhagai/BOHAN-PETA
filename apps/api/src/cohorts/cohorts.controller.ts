@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { CurrentTeacher, CurrentTeacherPayload } from "../auth/current-teacher.decorator";
 import { CohortsService } from "./cohorts.service";
@@ -32,5 +32,11 @@ export class CohortsController {
     @Body() dto: UpdateCohortDto,
   ) {
     return this.cohortsService.update(teacher.id, id, dto);
+  }
+
+  @Delete(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@CurrentTeacher() teacher: CurrentTeacherPayload, @Param("id") id: string) {
+    return this.cohortsService.remove(teacher.id, id);
   }
 }

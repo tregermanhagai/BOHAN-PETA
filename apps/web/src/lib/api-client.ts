@@ -61,10 +61,45 @@ async function request<TResponse>(
   return (await res.json()) as TResponse;
 }
 
+/**
+ * Downloads a file from an authenticated endpoint. A plain <a href> can't
+ * carry the Authorization header, so this fetches the bytes as a blob and
+ * triggers the browser's save dialog via a throwaway object URL instead.
+ */
+export async function downloadAuthenticated(path: string, fallbackFilename: string): Promise<void> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}${path}`, { headers });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.statusText);
+  }
+
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const plainMatch = disposition.match(/filename="([^"]+)"/i);
+  const filename = utf8Match
+    ? decodeURIComponent(utf8Match[1])
+    : (plainMatch?.[1] ?? fallbackFilename);
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
-  get: <T>(path: string) => request<T>(path),
+  get: <T>(path: string, opts?: { auth?: boolean }) => request<T>(path, { auth: opts?.auth ?? true }),
   post: <T>(path: string, body?: unknown, opts?: { auth?: boolean }) =>
     request<T>(path, { method: "POST", body, auth: opts?.auth ?? true }),
+  put: <T>(path: string, body?: unknown, opts?: { auth?: boolean }) =>
+    request<T>(path, { method: "PUT", body, auth: opts?.auth ?? true }),
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };

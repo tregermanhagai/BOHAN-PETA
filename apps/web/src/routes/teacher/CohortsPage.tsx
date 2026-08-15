@@ -57,6 +57,16 @@ export function CohortsPage() {
     }
   }
 
+  async function onDelete(cohort: CohortResponse) {
+    if (!confirm(t("cohorts.deleteConfirm", { name: cohort.name }))) return;
+    try {
+      await api.delete(`/cohorts/${cohort.id}`);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not delete cohort");
+    }
+  }
+
   return (
     <div className="page">
       <h1>{t("cohorts.title")}</h1>
@@ -102,9 +112,14 @@ export function CohortsPage() {
                   {c.startDate ?? "—"} – {c.endDate ?? "—"}
                 </div>
               </div>
-              <button className="link" type="button" onClick={() => toggleArchive(c)}>
-                {c.archived ? t("cohorts.unarchive") : t("cohorts.archive")}
-              </button>
+              <div className="form-actions">
+                <button className="link" type="button" onClick={() => toggleArchive(c)}>
+                  {c.archived ? t("cohorts.unarchive") : t("cohorts.archive")}
+                </button>
+                <button className="link danger" type="button" onClick={() => onDelete(c)}>
+                  {t("common.delete")}
+                </button>
+              </div>
             </div>
           ))}
       </div>

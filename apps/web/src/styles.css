@@ -182,7 +182,13 @@ h1 {
   }
 }
 
-button.primary {
+/*
+ * Not scoped to `button` — Link (an <a>) uses these classes too (e.g.
+ * the review-link button on the result screen), so the selectors match
+ * on class alone.
+ */
+.primary {
+  display: inline-block;
   background: var(--accent);
   color: white;
   border: none;
@@ -190,18 +196,21 @@ button.primary {
   border-radius: 8px;
   font-size: 1rem;
   cursor: pointer;
+  text-decoration: none;
+  text-align: center;
 }
 
-button.primary:hover {
+.primary:hover {
   background: var(--accent-strong);
+  color: white;
 }
 
-button.primary:disabled {
+.primary:disabled {
   opacity: 0.6;
   cursor: default;
 }
 
-button.link {
+.link {
   background: none;
   border: none;
   color: var(--accent);
@@ -211,11 +220,12 @@ button.link {
   text-decoration: underline;
 }
 
-button.link.danger {
+.link.danger {
   color: var(--crit);
 }
 
-button.secondary {
+.secondary {
+  display: inline-block;
   background: var(--surface);
   color: var(--ink);
   border: 1px solid var(--line);
@@ -223,9 +233,11 @@ button.secondary {
   border-radius: 8px;
   font-size: 0.95rem;
   cursor: pointer;
+  text-decoration: none;
+  text-align: center;
 }
 
-button.secondary:hover {
+.secondary:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -298,6 +310,84 @@ button.secondary:hover {
   color: #96631a;
 }
 
+.pill.status-in_progress {
+  background: #e6eef5;
+  border-color: #c3d6e8;
+  color: #2b5a82;
+}
+
+.pill.status-submitted {
+  background: #e1f1e7;
+  border-color: #bfe0cc;
+  color: var(--accent-strong);
+}
+
+.pill.status-focus_loss,
+.pill.status-time_expired {
+  background: #f5e3e1;
+  border-color: #e6bdb8;
+  color: var(--crit);
+}
+
+.scores-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .scores-summary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+.scores-stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.scores-stat-label {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.scores-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.scores-table th,
+.scores-table td {
+  padding: 8px 10px;
+  text-align: start;
+  white-space: nowrap;
+  border-block-end: 1px solid var(--line);
+}
+
+.scores-table th {
+  color: var(--ink-soft);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.scores-table th:hover {
+  color: var(--accent);
+}
+
+.scores-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
 .muted {
   color: var(--ink-soft);
 }
@@ -356,6 +446,188 @@ button.secondary:hover {
   background: var(--bg);
   color: var(--ink);
   font-size: 0.95rem;
+}
+
+.exam-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-block-end: 12px;
+}
+
+.exam-timer {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-weight: 600;
+  color: var(--accent-strong);
+}
+
+/* Only ever rendered when this browser already has a teacher session —
+   a real anonymous student never sees this (see ExamPage.tsx). */
+.exam-teacher-link {
+  margin-block-end: 10px;
+  font-size: 0.78rem;
+}
+
+.exam-teacher-link a {
+  color: var(--ink-soft);
+}
+
+.question-navigator {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-block-end: 16px;
+}
+
+.nav-dot {
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.nav-dot.answered {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+  background: #e1f1e7;
+}
+
+.nav-dot.current {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  font-weight: 700;
+}
+
+.answer-choice-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.answer-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-block-end: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.answer-choice:hover {
+  border-color: var(--accent);
+}
+
+.answer-choice input {
+  inline-size: 20px;
+  block-size: 20px;
+  flex: 0 0 auto;
+  margin-block-start: 2px;
+}
+
+.answer-choice-text {
+  /* min-width: 0 overrides flex's default min-width:auto — without it,
+     a long unbroken token (a function-call string, say) refuses to
+     shrink and forces the whole row wider than the viewport instead of
+     wrapping, which is the overflow this fixes. overflow-wrap: anywhere
+     allows breaking inside such a token as a last resort once it still
+     doesn't fit a line on its own. */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.warning-list {
+  margin: 0 0 18px;
+  padding-inline-start: 1.3em;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.warning-list li {
+  font-size: 1.02rem;
+  line-height: 1.5;
+}
+
+.warning-good-luck {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent-strong);
+  text-align: center;
+  margin-block-end: 18px;
+}
+
+.result-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  margin-block-end: 12px;
+}
+
+.result-badge.pass {
+  background: #e1f1e7;
+  color: var(--accent-strong);
+}
+
+.result-badge.fail {
+  background: #f5e3e1;
+  color: var(--crit);
+}
+
+.result-score {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-block-end: 4px;
+}
+
+.review-question {
+  border-inline-start: 4px solid var(--line);
+  padding-inline-start: 12px;
+  margin-block-end: 16px;
+}
+
+.review-question.correct {
+  border-inline-start-color: var(--accent);
+}
+
+.review-question.incorrect {
+  border-inline-start-color: var(--crit);
+}
+
+.review-status {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.review-status.correct {
+  color: var(--accent-strong);
+}
+
+.review-status.incorrect {
+  color: var(--crit);
+}
+
+.review-option {
+  padding: 4px 0;
+  font-size: 0.95rem;
+}
+
+.review-option.selected {
+  font-weight: 600;
+}
+
+.review-option.correct-answer {
+  color: var(--accent-strong);
 }
 
 .access-code {

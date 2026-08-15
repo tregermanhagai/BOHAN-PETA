@@ -4,7 +4,8 @@ import type { UpdateQuizGradingRequest } from "@bohan-peta/shared-types";
 export class UpdateQuizGradingDto implements UpdateQuizGradingRequest {
   @IsOptional()
   @IsInt()
-  @Min(1)
+  @Min(10)
+  @Max(60)
   durationMinutes?: number;
 
   @IsOptional()

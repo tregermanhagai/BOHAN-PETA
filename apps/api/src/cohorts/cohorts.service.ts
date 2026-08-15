@@ -63,4 +63,26 @@ export class CohortsService {
     });
     return toResponse(row);
   }
+
+  /**
+   * Hard delete, unlike archive — cascades through this cohort's
+   * assignments and any attempts/answers recorded against them. There's
+   * no PRD requirement to preserve this once a teacher explicitly asks
+   * to delete it (archive remains the reversible option for "hide but
+   * keep the history").
+   */
+  async remove(teacherId: string, id: string): Promise<void> {
+    await this.findOneForTeacher(teacherId, id);
+    const assignments = await this.prisma.quizAssignment.findMany({
+      where: { cohortId: id },
+      select: { id: true },
+    });
+    const assignmentIds = assignments.map((a) => a.id);
+
+    await this.prisma.$transaction([
+      this.prisma.attempt.deleteMany({ where: { quizAssignmentId: { in: assignmentIds } } }),
+      this.prisma.quizAssignment.deleteMany({ where: { cohortId: id } }),
+      this.prisma.cohort.delete({ where: { id } }),
+    ]);
+  }
 }

@@ -122,6 +122,13 @@ export function QuizEditorPage() {
     await load();
   }
 
+  async function onDeleteQuiz() {
+    if (!quiz) return;
+    if (!confirm(t("quizzes.deleteConfirm", { title: quiz.title }))) return;
+    await api.delete(`/quiz-templates/${quiz.id}`);
+    navigate("/quizzes");
+  }
+
   return (
     <div className="page page-wide">
       <Link className="back-link" to="/quizzes">
@@ -132,7 +139,10 @@ export function QuizEditorPage() {
         <h1>
           {quiz.title} <span className={`pill ${quiz.status}`}>{t(`quizzes.status.${quiz.status}`)}</span>
         </h1>
-        <div>
+        <div className="form-actions">
+          <button className="link danger" type="button" onClick={onDeleteQuiz}>
+            {t("quizzes.delete")}
+          </button>
           <button className="primary" type="button" onClick={togglePublish} disabled={publishing}>
             {quiz.status === "published" ? t("quiz.unpublish") : t("quiz.publish")}
           </button>
@@ -179,7 +189,8 @@ export function QuizEditorPage() {
                 id="durationMinutes"
                 name="durationMinutes"
                 type="number"
-                min={1}
+                min={10}
+                max={60}
                 defaultValue={quiz.durationMinutes}
                 required
               />
@@ -244,7 +255,9 @@ export function QuizEditorPage() {
           ) : (
             <div className="question-card" key={q.id}>
               <div className="question-card-head">
-                <div className="question-text">{q.text}</div>
+                <div className="question-text" dir="auto">
+                  {q.text}
+                </div>
                 <div className="form-actions">
                   <button className="link" type="button" onClick={() => setEditingQuestionId(q.id)}>
                     {t("common.edit")}
@@ -256,7 +269,7 @@ export function QuizEditorPage() {
               </div>
               <ul className="option-list">
                 {q.options.map((o) => (
-                  <li className={o.isCorrect ? "correct" : ""} key={o.id}>
+                  <li className={o.isCorrect ? "correct" : ""} key={o.id} dir="auto">
                     {o.isCorrect ? "✓" : "—"} {o.text}
                   </li>
                 ))}

@@ -220,11 +220,34 @@ export class QuizTemplatesService {
   async deleteQuestion(teacherId: string, quizTemplateId: string, questionId: string): Promise<void> {
     await this.getOwnedTemplateOrThrow(teacherId, quizTemplateId);
     await this.getOwnedQuestionOrThrow(quizTemplateId, questionId);
-    // Hard delete is safe here — no Attempt flow exists yet to reference
-    // this question's answers. Once attempts do, this should switch to
-    // is_active=false whenever the question has recorded AttemptAnswers
-    // (PRD 5.4).
+    // TODO(PRD 5.4): once a question has recorded AttemptAnswers, this
+    // should soft-delete (is_active=false) instead of hard-deleting, to
+    // keep historical attempts' answers intact and queryable. Not yet
+    // enforced — deleting a question currently orphans any AttemptAnswer
+    // rows that reference it (the FK has no cascade), which would throw
+    // rather than silently corrupt data, but the right fix is the
+    // soft-delete switch, not catching that error.
     await this.prisma.question.delete({ where: { id: questionId } });
+  }
+
+  /**
+   * Hard delete, same as cohorts — cascades through this quiz's
+   * assignments and any attempts/answers recorded against them, plus its
+   * questions/options/sources (already `onDelete: Cascade` in schema).
+   */
+  async remove(teacherId: string, id: string): Promise<void> {
+    await this.getOwnedTemplateOrThrow(teacherId, id);
+    const assignments = await this.prisma.quizAssignment.findMany({
+      where: { quizTemplateId: id },
+      select: { id: true },
+    });
+    const assignmentIds = assignments.map((a) => a.id);
+
+    await this.prisma.$transaction([
+      this.prisma.attempt.deleteMany({ where: { quizAssignmentId: { in: assignmentIds } } }),
+      this.prisma.quizAssignment.deleteMany({ where: { quizTemplateId: id } }),
+      this.prisma.quizTemplate.delete({ where: { id } }),
+    ]);
   }
 
   private async getOwnedTemplateOrThrow(teacherId: string, id: string) {

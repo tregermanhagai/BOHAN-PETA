@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { CurrentTeacher, CurrentTeacherPayload } from "../auth/current-teacher.decorator";
 import { QuizAssignmentsService } from "./quiz-assignments.service";
@@ -24,5 +24,15 @@ export class QuizAssignmentsController {
   @Get()
   findAll(@CurrentTeacher() teacher: CurrentTeacherPayload, @Param("cohortId") cohortId: string) {
     return this.quizAssignments.findAllForCohort(teacher.id, cohortId);
+  }
+
+  @Delete(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(
+    @CurrentTeacher() teacher: CurrentTeacherPayload,
+    @Param("cohortId") cohortId: string,
+    @Param("id") id: string,
+  ) {
+    return this.quizAssignments.remove(teacher.id, cohortId, id);
   }
 }
