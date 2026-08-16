@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { MailService } from "../mail/mail.service";
 import type {
   AttemptQuestionsResponse,
   AttemptResultResponse,
@@ -12,10 +13,14 @@ import type {
   Question as QuestionRow,
   QuizAssignment,
   QuizTemplate,
+  Student,
 } from "../../generated/prisma";
 
 type QuestionWithOptions = QuestionRow & { options: AnswerOptionRow[] };
-type AttemptWithRelations = AttemptRow & { quizAssignment: QuizAssignment & { quizTemplate: QuizTemplate } };
+type AttemptWithRelations = AttemptRow & {
+  quizAssignment: QuizAssignment & { quizTemplate: QuizTemplate };
+  student: Student;
+};
 
 /**
  * F-13a (v2.5): both Single Choice and Multiple Select are scored the
@@ -35,7 +40,10 @@ function isCorrectAnswer(question: QuestionWithOptions, selectedOptionIds: strin
 
 @Injectable()
 export class AttemptsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService,
+  ) {}
 
   async getQuestions(attemptId: string): Promise<AttemptQuestionsResponse> {
     const attempt = await this.ensureFinalized(await this.loadAttemptOrThrow(attemptId));
@@ -178,17 +186,34 @@ export class AttemptsService {
     const total = attempt.questionOrder.length;
     const score = total > 0 ? Math.round((correctCount / total) * 10000) / 100 : 0;
 
-    return this.prisma.attempt.update({
+    const finalized = await this.prisma.attempt.update({
       where: { id: attempt.id },
       data: { submittedAt: new Date(), score, endedReason },
-      include: { quizAssignment: { include: { quizTemplate: true } } },
+      include: { quizAssignment: { include: { quizTemplate: true } }, student: true },
     });
+
+    if (finalized.student.email) {
+      const passed = score >= Number(finalized.quizAssignment.quizTemplate.passScore);
+      // Best-effort: a student must never see an error just because SMTP
+      // is unreachable — MailService already swallows its own failures,
+      // this just keeps the submit response from waiting on network I/O.
+      void this.mail.sendExamResultEmail({
+        to: finalized.student.email,
+        studentName: `${finalized.student.firstName} ${finalized.student.lastName}`,
+        quizTitle: finalized.quizAssignment.quizTemplate.title,
+        score,
+        passed,
+        reviewToken: finalized.id,
+      });
+    }
+
+    return finalized;
   }
 
   private async loadAttemptOrThrow(attemptId: string): Promise<AttemptWithRelations> {
     const attempt = await this.prisma.attempt.findUnique({
       where: { id: attemptId },
-      include: { quizAssignment: { include: { quizTemplate: true } } },
+      include: { quizAssignment: { include: { quizTemplate: true } }, student: true },
     });
     if (!attempt) {
       throw new NotFoundException("Attempt not found");

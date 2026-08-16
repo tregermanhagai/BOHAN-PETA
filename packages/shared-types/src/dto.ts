@@ -117,7 +117,8 @@ export interface JoinAttemptRequest {
   lastName: string;
   /** Format-validated server-side (F-02); default Israeli ID checksum. */
   nationalId: string;
-  email?: string | null;
+  /** Required — the score/review-link email is sent here after submission. */
+  email: string;
   accessCode: string;
 }
 

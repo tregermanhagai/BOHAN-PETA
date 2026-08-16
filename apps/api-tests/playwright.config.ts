@@ -40,6 +40,14 @@ export default defineConfig({
       JWT_SECRET: TEST_JWT_SECRET,
       JWT_EXPIRES_IN: "1h",
       PORT: API_TEST_PORT,
+      // Explicitly blanked, not just omitted: tests join real-looking but
+      // fake @example.test addresses on every run, and MailService no-ops
+      // when these are empty. Leaving them unset would let this server
+      // fall through to whatever's ambient in the parent shell/.env,
+      // which would fire real sends to fake addresses and bounce into a
+      // real inbox — this override makes that structurally impossible.
+      SMTP_USER: "",
+      SMTP_APP_PASSWORD: "",
     },
   },
 });

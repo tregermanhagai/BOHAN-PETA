@@ -7,7 +7,7 @@ import type {
   QuizAssignmentResponse,
   QuizTemplateResponse,
 } from "@bohan-peta/shared-types";
-import { uniqueCohortName } from "./test-data";
+import { uniqueCohortName, uniqueEmail } from "./test-data";
 
 /** Same checksum as apps/api/src/students/national-id.util.ts. */
 function isValidIsraeliNationalId(rawId: string): boolean {
@@ -133,6 +133,7 @@ export async function joinAttempt(
     firstName: "QA",
     lastName: "Student",
     nationalId: uniqueValidNationalId(),
+    email: uniqueEmail("student"),
     ...overrides,
   };
   const res = await request.post("/assignments/join", { data: body });

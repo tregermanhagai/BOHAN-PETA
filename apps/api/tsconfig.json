@@ -13,7 +13,16 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": "./",
-    "incremental": true,
+    // Deliberately non-incremental: nest-cli.json's deleteOutDir wipes
+    // dist/ before each build, but an incremental .tsbuildinfo file
+    // outside dist survives that wipe. tsc then trusts the buildinfo,
+    // sees source files unchanged, and silently skips re-emitting —
+    // leaving dist/main missing. Moving the buildinfo inside dist/ (so
+    // it gets wiped too) instead caused `nest start --watch`'s restart
+    // watcher to loop, since it treats the buildinfo's own writes as
+    // further file changes. Matches tsconfig.test-server.json, which
+    // hit the same staleness bug and was fixed the same way.
+    "incremental": false,
     "skipLibCheck": true,
     "strict": true,
     "strictNullChecks": true,

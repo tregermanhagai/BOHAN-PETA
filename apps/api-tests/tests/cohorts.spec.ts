@@ -42,6 +42,13 @@ test.describe("POST /cohorts", () => {
     expect(res.status()).toBe(400);
   });
 
+  test("rejects an end date before the start date", async ({ authedRequest }) => {
+    const res = await authedRequest.post("/cohorts", {
+      data: { name: uniqueCohortName(), startDate: "2026-03-20", endDate: "2026-01-05" },
+    });
+    expect(res.status()).toBe(400);
+  });
+
   test("rejects an unauthenticated request with 401", async ({ request }) => {
     const res = await request.post("/cohorts", { data: { name: uniqueCohortName() } });
     expect(res.status()).toBe(401);
@@ -118,6 +125,17 @@ test.describe("PATCH /cohorts/:id", () => {
     expect((await res.json()).name).toBe(newName);
   });
 
+  test("rejects moving the end date before an existing start date", async ({ authedRequest }) => {
+    const created = await (
+      await authedRequest.post("/cohorts", {
+        data: { name: uniqueCohortName(), startDate: "2026-03-20" },
+      })
+    ).json();
+
+    const res = await authedRequest.patch(`/cohorts/${created.id}`, { data: { endDate: "2026-01-05" } });
+    expect(res.status()).toBe(400);
+  });
+
   test("archives and unarchives a cohort (F-20)", async ({ authedRequest }) => {
     const created = await (await authedRequest.post("/cohorts", { data: { name: uniqueCohortName() } })).json();
 
@@ -170,6 +188,7 @@ test.describe("DELETE /cohorts/:id", () => {
         firstName: "To",
         lastName: "BeDeleted",
         nationalId: "300000007",
+        email: uniqueEmail(),
         accessCode: assignment.accessCode,
       },
     });

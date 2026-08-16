@@ -43,12 +43,12 @@ export class StudentsService {
     // student_id can't bypass the single/max-attempt rule below.
     const student = await this.prisma.student.upsert({
       where: { nationalId: dto.nationalId },
-      update: { firstName: dto.firstName, lastName: dto.lastName, email: dto.email ?? undefined },
+      update: { firstName: dto.firstName, lastName: dto.lastName, email: dto.email },
       create: {
         firstName: dto.firstName,
         lastName: dto.lastName,
         nationalId: dto.nationalId,
-        email: dto.email ?? undefined,
+        email: dto.email,
       },
     });
 

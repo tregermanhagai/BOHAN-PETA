@@ -1,6 +1,7 @@
 import { test, expect } from "../support/fixtures";
 import { createAssignment, joinAttempt, setUpExamReadyQuiz, uniqueValidNationalId } from "../support/attempt-helpers";
 import { rewindAttemptStartedAt } from "../support/db";
+import { uniqueEmail } from "../support/test-data";
 
 test.describe("POST /assignments/join", () => {
   test("joins successfully with valid data", async ({ authedRequest, request }) => {
@@ -10,6 +11,7 @@ test.describe("POST /assignments/join", () => {
         firstName: "Dana",
         lastName: "Cohen",
         nationalId: uniqueValidNationalId(),
+        email: uniqueEmail(),
         accessCode: assignment.accessCode,
       },
     });
@@ -20,17 +22,56 @@ test.describe("POST /assignments/join", () => {
     expect(body.questionCount).toBe(3);
   });
 
+  test("rejects joining without an email", async ({ authedRequest, request }) => {
+    const { assignment } = await setUpExamReadyQuiz(authedRequest);
+    const res = await request.post("/assignments/join", {
+      data: {
+        firstName: "X",
+        lastName: "Y",
+        nationalId: uniqueValidNationalId(),
+        accessCode: assignment.accessCode,
+      },
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test("rejects joining with a malformed email", async ({ authedRequest, request }) => {
+    const { assignment } = await setUpExamReadyQuiz(authedRequest);
+    const res = await request.post("/assignments/join", {
+      data: {
+        firstName: "X",
+        lastName: "Y",
+        nationalId: uniqueValidNationalId(),
+        email: "not-an-email",
+        accessCode: assignment.accessCode,
+      },
+    });
+    expect(res.status()).toBe(400);
+  });
+
   test("rejects a national ID that fails the checksum (F-02)", async ({ authedRequest, request }) => {
     const { assignment } = await setUpExamReadyQuiz(authedRequest);
     const res = await request.post("/assignments/join", {
-      data: { firstName: "X", lastName: "Y", nationalId: "111111111", accessCode: assignment.accessCode },
+      data: {
+        firstName: "X",
+        lastName: "Y",
+        nationalId: "111111111",
+        email: uniqueEmail(),
+        accessCode: assignment.accessCode,
+      },
     });
     expect(res.status()).toBe(400);
   });
 
   test("rejects an unknown access code", async ({ request }) => {
     const res = await request.post("/assignments/join", {
-      data: { firstName: "X", lastName: "Y", nationalId: uniqueValidNationalId(), accessCode: "000000" },
+      data: {
+        firstName: "X",
+        lastName: "Y",
+        nationalId: uniqueValidNationalId(),
+        email: uniqueEmail(),
+        accessCode: "000000",
+      },
     });
     expect(res.status()).toBe(404);
   });
@@ -47,6 +88,7 @@ test.describe("POST /assignments/join", () => {
         firstName: "X",
         lastName: "Y",
         nationalId: uniqueValidNationalId(),
+        email: uniqueEmail(),
         accessCode: assignment.accessCode,
       },
     });
@@ -65,6 +107,7 @@ test.describe("POST /assignments/join", () => {
         firstName: "X",
         lastName: "Y",
         nationalId: uniqueValidNationalId(),
+        email: uniqueEmail(),
         accessCode: assignment.accessCode,
       },
     });
@@ -75,7 +118,7 @@ test.describe("POST /assignments/join", () => {
     const { assignment } = await setUpExamReadyQuiz(authedRequest);
     const nationalId = uniqueValidNationalId();
     const first = await request.post("/assignments/join", {
-      data: { firstName: "Same", lastName: "Person", nationalId, accessCode: assignment.accessCode },
+      data: { firstName: "Same", lastName: "Person", nationalId, email: uniqueEmail(), accessCode: assignment.accessCode },
     });
     expect(first.status()).toBe(201);
 
@@ -83,7 +126,7 @@ test.describe("POST /assignments/join", () => {
     // slightly different name spelling on the same ID to confirm it's
     // still recognized as the same student.
     const second = await request.post("/assignments/join", {
-      data: { firstName: "sAME", lastName: "PERSON", nationalId, accessCode: assignment.accessCode },
+      data: { firstName: "sAME", lastName: "PERSON", nationalId, email: uniqueEmail(), accessCode: assignment.accessCode },
     });
     expect(second.status()).toBe(409);
   });
@@ -91,7 +134,13 @@ test.describe("POST /assignments/join", () => {
   test("allows a second attempt when maxAttempts=2, blocks a third", async ({ authedRequest, request }) => {
     const { assignment } = await setUpExamReadyQuiz(authedRequest, { maxAttempts: 2 });
     const nationalId = uniqueValidNationalId();
-    const data = { firstName: "Multi", lastName: "Attempt", nationalId, accessCode: assignment.accessCode };
+    const data = {
+      firstName: "Multi",
+      lastName: "Attempt",
+      nationalId,
+      email: uniqueEmail(),
+      accessCode: assignment.accessCode,
+    };
 
     expect((await request.post("/assignments/join", { data })).status()).toBe(201);
     expect((await request.post("/assignments/join", { data })).status()).toBe(201);
@@ -107,6 +156,7 @@ test.describe("POST /assignments/join", () => {
         firstName: "X",
         lastName: "Y",
         nationalId: uniqueValidNationalId(),
+        email: uniqueEmail(),
         accessCode: assignment.accessCode,
       },
     });

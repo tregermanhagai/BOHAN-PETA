@@ -29,6 +29,10 @@ export function CohortsPage() {
   async function onCreate(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (startDate && endDate && endDate < startDate) {
+      setError(t("cohorts.dateRangeInvalid"));
+      return;
+    }
     setSubmitting(true);
     try {
       const body: CreateCohortRequest = {

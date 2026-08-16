@@ -1,9 +1,17 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import type { CohortResponse } from "@bohan-peta/shared-types";
 import { CreateCohortDto } from "./dto/create-cohort.dto";
 import { UpdateCohortDto } from "./dto/update-cohort.dto";
 import type { Cohort as CohortRow } from "../../generated/prisma";
+
+function assertValidRange(startDate: string | null, endDate: string | null): void {
+  // ISO8601 (YYYY-MM-DD) date strings compare lexicographically in
+  // chronological order, so a plain string comparison is enough here.
+  if (startDate && endDate && endDate < startDate) {
+    throw new BadRequestException("endDate must not be before startDate");
+  }
+}
 
 function toResponse(row: CohortRow): CohortResponse {
   return {
@@ -21,6 +29,7 @@ export class CohortsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(teacherId: string, dto: CreateCohortDto): Promise<CohortResponse> {
+    assertValidRange(dto.startDate ?? null, dto.endDate ?? null);
     const row = await this.prisma.cohort.create({
       data: {
         teacherId,
@@ -49,7 +58,11 @@ export class CohortsService {
   }
 
   async update(teacherId: string, id: string, dto: UpdateCohortDto): Promise<CohortResponse> {
-    await this.findOneForTeacher(teacherId, id);
+    const existing = await this.findOneForTeacher(teacherId, id);
+    const resolvedStartDate = dto.startDate !== undefined ? dto.startDate : existing.startDate;
+    const resolvedEndDate = dto.endDate !== undefined ? dto.endDate : existing.endDate;
+    assertValidRange(resolvedStartDate, resolvedEndDate);
+
     const row = await this.prisma.cohort.update({
       where: { id },
       data: {

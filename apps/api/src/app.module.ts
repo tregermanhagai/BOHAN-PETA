@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { PrismaModule } from "./prisma/prisma.module";
+import { MailModule } from "./mail/mail.module";
 import { HealthController } from "./health/health.controller";
 import { AuthModule } from "./auth/auth.module";
 import { CohortsModule } from "./cohorts/cohorts.module";
@@ -15,6 +16,7 @@ import { AiGenerationModule } from "./ai-generation/ai-generation.module";
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    MailModule,
     AuthModule,
     CohortsModule,
     StudentsModule,

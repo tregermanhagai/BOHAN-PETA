@@ -34,7 +34,7 @@ export function JoinPage() {
         firstName,
         lastName,
         nationalId,
-        email: email || null,
+        email,
         accessCode,
       };
       const res = await api.post<JoinAttemptResponse>("/assignments/join", body, { auth: false });
@@ -99,7 +99,13 @@ export function JoinPage() {
           </div>
           <div className="field">
             <label htmlFor="email">{t("join.email")}</label>
-            <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
             <span className="muted">{t("join.emailHint")}</span>
           </div>
           <div className="field">

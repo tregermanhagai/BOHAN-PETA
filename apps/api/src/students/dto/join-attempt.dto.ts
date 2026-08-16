@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
+import { IsEmail, IsString, MinLength } from "class-validator";
 import type { JoinAttemptRequest } from "@bohan-peta/shared-types";
 
 export class JoinAttemptDto implements JoinAttemptRequest {
@@ -14,9 +14,10 @@ export class JoinAttemptDto implements JoinAttemptRequest {
   @MinLength(1)
   nationalId!: string;
 
-  @IsOptional()
+  // Required (not optional) — the result email (score + review link) is
+  // the only place a student can find their review link after the exam.
   @IsEmail()
-  email?: string | null;
+  email!: string;
 
   @IsString()
   @MinLength(1)
