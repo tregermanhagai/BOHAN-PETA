@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { AttemptQuestionView, AttemptQuestionsResponse, AttemptResultResponse } from "@bohan-peta/shared-types";
-import { api, ApiError } from "../../lib/api-client";
+import { api } from "../../lib/api-client";
+import { translateApiError } from "../../lib/error-messages";
 import { useAuth } from "../../auth/AuthContext";
 
 const FOCUS_LOSS_GRACE_MS = 3000;
@@ -41,10 +42,10 @@ export function ExamPage() {
         navigate(`/attempt/${id}/result`, { state: result });
       } catch (err) {
         endingRef.current = false;
-        setError(err instanceof ApiError ? err.message : "Could not submit the exam");
+        setError(translateApiError(err, t));
       }
     },
-    [id, navigate],
+    [id, navigate, t],
   );
 
   // Initial load.
@@ -62,7 +63,7 @@ export function ExamPage() {
         setQuestions(data.questions);
         setDeadline(new Date(data.startedAt).getTime() + data.durationMinutes * 60_000);
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Could not load the exam"));
+      .catch((err) => setError(translateApiError(err, t)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -119,7 +120,7 @@ export function ExamPage() {
       prev ? prev.map((q) => (q.id === questionId ? { ...q, selectedOptionIds } : q)) : prev,
     );
     api.put(`/attempts/${id}/answers/${questionId}`, { selectedOptionIds }, { auth: false }).catch((err) => {
-      setError(err instanceof ApiError ? err.message : "Could not save your answer");
+      setError(translateApiError(err, t));
     });
   }
 

@@ -630,6 +630,12 @@ h1 {
   color: var(--accent-strong);
 }
 
+.access-code-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .access-code {
   font-family: ui-monospace, "SF Mono", Consolas, monospace;
   font-size: 1.3rem;

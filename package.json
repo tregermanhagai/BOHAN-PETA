@@ -9,6 +9,8 @@
   "scripts": {
     "dev:api": "npm run start:dev --workspace apps/api",
     "dev:web": "npm run dev --workspace apps/web",
+    "dev:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-stop.ps1",
+    "dev:clean": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-clean.ps1",
     "build": "npm run build --workspace packages/shared-types && npm run build --workspace apps/api && npm run build --workspace apps/web",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",

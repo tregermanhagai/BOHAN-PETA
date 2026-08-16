@@ -73,7 +73,14 @@ export async function downloadAuthenticated(path: string, fallbackFilename: stri
 
   const res = await fetch(`${API_BASE}${path}`, { headers });
   if (!res.ok) {
-    throw new ApiError(res.status, res.statusText);
+    let message = res.statusText;
+    try {
+      const data = await res.json();
+      message = data.message ?? message;
+    } catch {
+      /* response had no JSON body */
+    }
+    throw new ApiError(res.status, Array.isArray(message) ? message.join(", ") : message);
   }
 
   const disposition = res.headers.get("Content-Disposition") ?? "";

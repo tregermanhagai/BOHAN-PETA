@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import type { AttemptReviewResponse } from "@bohan-peta/shared-types";
-import { api, ApiError } from "../../lib/api-client";
+import { api } from "../../lib/api-client";
+import { translateApiError } from "../../lib/error-messages";
 
 export function ReviewPage() {
   const { t } = useTranslation();
@@ -15,7 +16,7 @@ export function ReviewPage() {
     api
       .get<AttemptReviewResponse>(`/attempts/${id}/review`, { auth: false })
       .then(setReview)
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Could not load your review"));
+      .catch((err) => setError(translateApiError(err, t)));
   }, [id]);
 
   if (error) return <div className="page error">{error}</div>;

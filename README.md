@@ -78,18 +78,20 @@ This runs against a **separate** API instance (port 3001) and a **separate** Pos
 
 This environment is Windows-on-ARM. Prisma's native query-engine binary can't load inside an arm64 Node.js process, so `apps/api/prisma/schema.prisma` uses `engineType = "client"` (Prisma's Rust-free client) with `@prisma/adapter-pg` driving queries through `pg` instead — see the comment in `apps/api/src/prisma/prisma.service.ts`. This isn't a workaround specific to one machine's quirks so much as where Prisma's architecture is headed anyway (it's the default in Prisma 7); nothing here needs revisiting when moving to an x64 machine or to production.
 
-## Troubleshooting: `npm run dev:api` fails with "Cannot find module .../dist/main"
+## Stopping / cleaning the dev environment
 
-`nest start --watch` compiles to a real `dist/` folder and spawns a child `node dist/main.js` process — but doesn't always clean up that child when you stop it (Ctrl+C, or killing the terminal). Restart it enough times over a session and orphaned instances pile up, all racing to rewrite the same `dist/` folder, which produces exactly this error on the next start. Fix:
+`nest start --watch` compiles to a real `dist/` folder and spawns a child `node dist/main.js` process — but doesn't always clean up that child when you stop it (Ctrl+C, closing the terminal, killing the wrong PID). Restart it enough times over a session and orphaned instances pile up, all racing to rewrite the same `dist/` folder — which produces `Cannot find module .../dist/main`, or worse, two live watchers fighting over `dist/` and restarting each other in a loop.
 
-```powershell
-# Windows — kill only this project's orphaned nest processes, nothing else
-Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
-  Where-Object { $_.CommandLine -like "*nest.js*start*watch*" } |
-  ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+Use these instead of manually hunting down and killing terminals:
+
+```bash
+npm run dev:stop   # kills anything bound to the dev ports (3000/5173/3001), plus their watcher chains
+npm run dev:clean  # dev:stop, then also wipes dist/ and dist-test/ for a guaranteed-fresh build
 ```
 
-Then delete `apps/api/dist` and `apps/api/tsconfig.tsbuildinfo` and re-run `npm run dev:api`. (`pkill -f "nest start"` from Git Bash only kills the CLI wrapper, not the spawned child — it won't fully fix this on its own.)
+Prefer `npm run dev:stop` over stopping servers by closing terminal windows — closing a window doesn't reliably kill the process tree it spawned, which is exactly how orphans accumulate. Simplest prevention: run `dev:stop` when you're done for a session rather than leaving servers running indefinitely — nothing can orphan if nothing's left up.
+
+**Why this needs a real script, not a one-liner:** killing by command-line substring (e.g. `*nest.js*start*watch*`) is unreliable — an orphan started via `npm run start:dev` shows up as a bare `npm-cli.js run start:dev` process with no project-identifying text at all, so pattern filters silently miss it. Killing only the process bound to the port isn't enough either — `nest-cli` spawns its child via `shell: true` on Windows, so the watcher (`nest.js`) and its child aren't directly linked by `ParentProcessId` by the time you look, and the still-alive watcher just respawns a replacement the moment you kill its child. `scripts/dev-stop.ps1` combines port-based lookup (for whatever's actually listening, regardless of how it was launched) with a signature sweep for the known wrapper processes (`nest.js`, `vite.js`, the `start:dev` script name) to catch the whole chain in one pass.
 
 ## Repo layout
 

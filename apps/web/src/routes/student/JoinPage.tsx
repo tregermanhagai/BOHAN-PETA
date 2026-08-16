@@ -2,7 +2,8 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import type { JoinAttemptRequest, JoinAttemptResponse } from "@bohan-peta/shared-types";
-import { api, ApiError } from "../../lib/api-client";
+import { api } from "../../lib/api-client";
+import { translateApiError } from "../../lib/error-messages";
 
 export function JoinPage() {
   const { t } = useTranslation();
@@ -40,7 +41,7 @@ export function JoinPage() {
       const res = await api.post<JoinAttemptResponse>("/assignments/join", body, { auth: false });
       navigate(`/attempt/${res.attemptId}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong");
+      setError(translateApiError(err, t));
       setSubmitting(false);
     }
   }

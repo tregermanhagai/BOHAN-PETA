@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { AttemptResultResponse } from "@bohan-peta/shared-types";
-import { api, ApiError } from "../../lib/api-client";
+import { api } from "../../lib/api-client";
+import { translateApiError } from "../../lib/error-messages";
 
 export function ResultPage() {
   const { t } = useTranslation();
@@ -22,7 +23,7 @@ export function ResultPage() {
     api
       .post<AttemptResultResponse>(`/attempts/${id}/submit`, undefined, { auth: false })
       .then(setResult)
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Could not load your result"));
+      .catch((err) => setError(translateApiError(err, t)));
   }, [id, result]);
 
   if (error) return <div className="page error">{error}</div>;

@@ -6,7 +6,8 @@ import type {
   QuizAssignmentResponse,
   QuizTemplateSummaryResponse,
 } from "@bohan-peta/shared-types";
-import { api, ApiError } from "../../lib/api-client";
+import { api } from "../../lib/api-client";
+import { translateApiError } from "../../lib/error-messages";
 
 export function CohortDetailPage() {
   const { t } = useTranslation();
@@ -23,6 +24,13 @@ export function CohortDetailPage() {
   const [shuffle, setShuffle] = useState(true);
   const [openAt, setOpenAt] = useState("");
   const [closeAt, setCloseAt] = useState("");
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  async function onCopyAccessCode(code: string) {
+    await navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode((current) => (current === code ? null : current)), 1500);
+  }
 
   async function load() {
     if (!id) return;
@@ -34,11 +42,12 @@ export function CohortDetailPage() {
     setCohort(cohortData);
     setAssignments(assignmentData);
     setQuizzes(quizData);
-    if (!selectedQuizId && quizData.length > 0) setSelectedQuizId(quizData[0].id);
+    const published = quizData.filter((q) => q.status === "published");
+    if (!selectedQuizId && published.length > 0) setSelectedQuizId(published[0].id);
   }
 
   useEffect(() => {
-    load().catch((err) => setError(err instanceof ApiError ? err.message : "Could not load cohort"));
+    load().catch((err) => setError(translateApiError(err, t)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -59,7 +68,7 @@ export function CohortDetailPage() {
       setCloseAt("");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not create assignment");
+      setError(translateApiError(err, t));
     } finally {
       setSubmitting(false);
     }
@@ -72,7 +81,7 @@ export function CohortDetailPage() {
       await api.delete(`/cohorts/${id}`);
       navigate("/cohorts");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not delete cohort");
+      setError(translateApiError(err, t));
     }
   }
 
@@ -83,7 +92,7 @@ export function CohortDetailPage() {
       await api.delete(`/cohorts/${id}/assignments/${assignment.id}`);
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not delete assignment");
+      setError(translateApiError(err, t));
     }
   }
 
@@ -91,6 +100,14 @@ export function CohortDetailPage() {
     () => quizzes?.find((q) => q.id === selectedQuizId) ?? null,
     [quizzes, selectedQuizId],
   );
+  // Draft quizzes are excluded here so a teacher can never assign an
+  // unpublished quiz to a cohort — that's the only way to reach the
+  // "not currently available" error a student would otherwise hit.
+  const publishedQuizzes = useMemo(() => quizzes?.filter((q) => q.status === "published") ?? [], [quizzes]);
+  // Same origin the teacher is viewing this page from, so it's the LAN IP
+  // (not "localhost") when opened from a phone — matches how the API host
+  // is auto-detected elsewhere (see README "Running on your phone").
+  const joinUrl = `${window.location.origin}/join`;
 
   if (!cohort) return <div className="page muted">{t("common.loading")}</div>;
 
@@ -115,6 +132,8 @@ export function CohortDetailPage() {
         <h2>{t("assignments.create")}</h2>
         {quizzes !== null && quizzes.length === 0 ? (
           <p className="muted">{t("assignments.noQuizzes")}</p>
+        ) : quizzes !== null && publishedQuizzes.length === 0 ? (
+          <p className="muted">{t("assignments.noPublishedQuizzes")}</p>
         ) : (
           <form onSubmit={onCreateAssignment}>
             {error && <div className="error">{error}</div>}
@@ -125,9 +144,9 @@ export function CohortDetailPage() {
                 value={selectedQuizId}
                 onChange={(e) => setSelectedQuizId(e.target.value)}
               >
-                {quizzes?.map((q) => (
+                {publishedQuizzes.map((q) => (
                   <option key={q.id} value={q.id}>
-                    {q.title} — {t(`quizzes.status.${q.status}`)}
+                    {q.title}
                   </option>
                 ))}
               </select>
@@ -202,8 +221,23 @@ export function CohortDetailPage() {
               </div>
             </div>
             <div>
-              <div className="access-code">{a.accessCode}</div>
+              <div className="access-code-row">
+                <div className="access-code">{a.accessCode}</div>
+                <button
+                  className="link"
+                  type="button"
+                  onClick={() => onCopyAccessCode(a.accessCode)}
+                >
+                  {copiedCode === a.accessCode ? t("assignments.copied") : t("assignments.copyCode")}
+                </button>
+              </div>
               <div className="list-row-meta">{t("assignments.accessCodeHint")}</div>
+              <div className="list-row-meta">
+                {t("assignments.joinUrl")}:{" "}
+                <a href={joinUrl} target="_blank" rel="noreferrer">
+                  {joinUrl}
+                </a>
+              </div>
             </div>
             <button className="link danger" type="button" onClick={() => onDeleteAssignment(a)}>
               {t("common.delete")}

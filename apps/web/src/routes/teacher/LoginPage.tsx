@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
-import { ApiError } from "../../lib/api-client";
+import { translateApiError } from "../../lib/error-messages";
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -21,7 +21,7 @@ export function LoginPage() {
       await login({ email, password });
       navigate("/cohorts");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong");
+      setError(translateApiError(err, t));
     } finally {
       setSubmitting(false);
     }

@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import type { QuizTemplateSummaryResponse } from "@bohan-peta/shared-types";
-import { api, ApiError } from "../../lib/api-client";
+import { api } from "../../lib/api-client";
+import { translateApiError } from "../../lib/error-messages";
 
 export function QuizzesPage() {
   const { t } = useTranslation();
@@ -17,7 +18,7 @@ export function QuizzesPage() {
       const data = await api.get<QuizTemplateSummaryResponse[]>("/quiz-templates");
       setQuizzes(data);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not load quizzes");
+      setError(translateApiError(err, t));
     }
   }
 
@@ -33,7 +34,7 @@ export function QuizzesPage() {
       const created = await api.post<{ id: string }>("/quiz-templates", { title });
       navigate(`/quizzes/${created.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not create quiz");
+      setError(translateApiError(err, t));
       setSubmitting(false);
     }
   }
@@ -44,7 +45,7 @@ export function QuizzesPage() {
       await api.delete(`/quiz-templates/${quiz.id}`);
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not delete quiz");
+      setError(translateApiError(err, t));
     }
   }
 

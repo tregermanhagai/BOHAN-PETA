@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import type { CohortResponse, CreateCohortRequest } from "@bohan-peta/shared-types";
-import { api, ApiError } from "../../lib/api-client";
+import { api } from "../../lib/api-client";
+import { translateApiError } from "../../lib/error-messages";
 
 export function CohortsPage() {
   const { t } = useTranslation();
@@ -18,7 +19,7 @@ export function CohortsPage() {
       const data = await api.get<CohortResponse[]>("/cohorts");
       setCohorts(data);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not load cohorts");
+      setError(translateApiError(err, t));
     }
   }
 
@@ -46,7 +47,7 @@ export function CohortsPage() {
       setEndDate("");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not create cohort");
+      setError(translateApiError(err, t));
     } finally {
       setSubmitting(false);
     }
@@ -57,7 +58,7 @@ export function CohortsPage() {
       await api.patch<CohortResponse>(`/cohorts/${cohort.id}`, { archived: !cohort.archived });
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not update cohort");
+      setError(translateApiError(err, t));
     }
   }
 
@@ -67,7 +68,7 @@ export function CohortsPage() {
       await api.delete(`/cohorts/${cohort.id}`);
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not delete cohort");
+      setError(translateApiError(err, t));
     }
   }
 

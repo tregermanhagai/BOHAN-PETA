@@ -1,6 +1,6 @@
 import { test, expect } from "../support/fixtures";
 import { uniqueCohortName, uniqueEmail } from "../support/test-data";
-import { authHeader, createPublishedQuiz } from "../support/quiz-helpers";
+import { authHeader, createDraftQuiz, createPublishedQuiz } from "../support/quiz-helpers";
 
 async function createCohort(authedRequest: import("@playwright/test").APIRequestContext, name?: string) {
   const res = await authedRequest.post("/cohorts", { data: { name: name ?? uniqueCohortName() } });
@@ -27,6 +27,16 @@ test.describe("POST /cohorts/:cohortId/assignments", () => {
       shuffle: true,
     });
     expect(body.accessCode).toMatch(/^\d{6}$/);
+  });
+
+  test("rejects assigning a quiz that's still in Draft (F-XX)", async ({ authedRequest }) => {
+    const cohort = await createCohort(authedRequest);
+    const quiz = await createDraftQuiz(authedRequest);
+
+    const res = await authedRequest.post(`/cohorts/${cohort.id}/assignments`, {
+      data: { quizTemplateId: quiz.id },
+    });
+    expect(res.status()).toBe(400);
   });
 
   test("accepts custom maxAttempts/shuffle/open/close settings", async ({ authedRequest }) => {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import type { QuizAssignmentResponse } from "@bohan-peta/shared-types";
 import { CreateQuizAssignmentDto } from "./dto/create-quiz-assignment.dto";
@@ -36,6 +36,13 @@ export class QuizAssignmentsService {
     });
     if (!quizTemplate) {
       throw new NotFoundException("Quiz template not found");
+    }
+    // Belt-and-suspenders: the teacher UI only offers published quizzes
+    // in the assignment form, but that's a client-side filter — without
+    // this check, a direct API call could still assign a draft quiz,
+    // which is the only way a student ever hits "exam not available".
+    if (quizTemplate.status !== "published") {
+      throw new BadRequestException("Quiz must be published before it can be assigned to a cohort");
     }
 
     const accessCode = await this.generateUniqueAccessCode();

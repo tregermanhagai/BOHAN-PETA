@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import type { CohortResponse, CohortScoresResponse, ScoreRow } from "@bohan-peta/shared-types";
-import { api, ApiError, downloadAuthenticated } from "../../lib/api-client";
+import { api, downloadAuthenticated } from "../../lib/api-client";
+import { translateApiError } from "../../lib/error-messages";
 
 type SortKey = "studentName" | "quizTitle" | "score" | "submittedAt";
 
@@ -36,7 +37,7 @@ export function ScoresPage() {
         setCohort(c);
         setScores(s);
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Could not load scores"));
+      .catch((err) => setError(translateApiError(err, t)));
   }, [id]);
 
   const quizTitles = useMemo(
@@ -97,7 +98,7 @@ export function ScoresPage() {
     try {
       await downloadAuthenticated(`/cohorts/${id}/scores/export`, "scores.csv");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not export scores");
+      setError(translateApiError(err, t));
     } finally {
       setExporting(false);
     }

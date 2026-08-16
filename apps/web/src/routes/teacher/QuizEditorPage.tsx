@@ -6,7 +6,8 @@ import type {
   QuizTemplateResponse,
   UpsertQuestionRequest,
 } from "@bohan-peta/shared-types";
-import { api, ApiError } from "../../lib/api-client";
+import { api } from "../../lib/api-client";
+import { translateApiError } from "../../lib/error-messages";
 import { QuestionForm } from "../../components/QuestionForm";
 
 export function QuizEditorPage() {
@@ -18,9 +19,12 @@ export function QuizEditorPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
   const [gradingSaving, setGradingSaving] = useState(false);
+  const [gradingError, setGradingError] = useState<string | null>(null);
 
   const [editingQuestionId, setEditingQuestionId] = useState<string | "new" | null>(null);
   const [questionSaving, setQuestionSaving] = useState(false);
@@ -32,7 +36,7 @@ export function QuizEditorPage() {
       const data = await api.get<QuizTemplateResponse>(`/quiz-templates/${id}`);
       setQuiz(data);
     } catch (err) {
-      setLoadError(err instanceof ApiError ? err.message : "Could not load quiz");
+      setLoadError(translateApiError(err, t));
     }
   }
 
@@ -49,6 +53,7 @@ export function QuizEditorPage() {
     if (!quiz) return;
     const form = new FormData(e.currentTarget);
     setSettingsSaving(true);
+    setSettingsError(null);
     try {
       await api.patch(`/quiz-templates/${quiz.id}`, {
         title: String(form.get("title")),
@@ -56,6 +61,8 @@ export function QuizEditorPage() {
         difficulty: (form.get("difficulty") as QuizDifficulty) || null,
       });
       await load();
+    } catch (err) {
+      setSettingsError(translateApiError(err, t));
     } finally {
       setSettingsSaving(false);
     }
@@ -66,6 +73,7 @@ export function QuizEditorPage() {
     if (!quiz) return;
     const form = new FormData(e.currentTarget);
     setGradingSaving(true);
+    setGradingError(null);
     try {
       await api.patch(`/quiz-templates/${quiz.id}/grading`, {
         durationMinutes: Number(form.get("durationMinutes")),
@@ -75,6 +83,8 @@ export function QuizEditorPage() {
         revealAnswerKey: form.get("revealAnswerKey") === "on",
       });
       await load();
+    } catch (err) {
+      setGradingError(translateApiError(err, t));
     } finally {
       setGradingSaving(false);
     }
@@ -90,7 +100,7 @@ export function QuizEditorPage() {
       });
       await load();
     } catch (err) {
-      setPublishError(err instanceof ApiError ? err.message : "Could not update status");
+      setPublishError(translateApiError(err, t));
     } finally {
       setPublishing(false);
     }
@@ -109,7 +119,7 @@ export function QuizEditorPage() {
       setEditingQuestionId(null);
       await load();
     } catch (err) {
-      setQuestionError(err instanceof ApiError ? err.message : "Could not save question");
+      setQuestionError(translateApiError(err, t));
     } finally {
       setQuestionSaving(false);
     }
@@ -118,15 +128,25 @@ export function QuizEditorPage() {
   async function onDeleteQuestion(qid: string) {
     if (!quiz) return;
     if (!confirm(t("question.deleteConfirm"))) return;
-    await api.delete(`/quiz-templates/${quiz.id}/questions/${qid}`);
-    await load();
+    setActionError(null);
+    try {
+      await api.delete(`/quiz-templates/${quiz.id}/questions/${qid}`);
+      await load();
+    } catch (err) {
+      setActionError(translateApiError(err, t));
+    }
   }
 
   async function onDeleteQuiz() {
     if (!quiz) return;
     if (!confirm(t("quizzes.deleteConfirm", { title: quiz.title }))) return;
-    await api.delete(`/quiz-templates/${quiz.id}`);
-    navigate("/quizzes");
+    setActionError(null);
+    try {
+      await api.delete(`/quiz-templates/${quiz.id}`);
+      navigate("/quizzes");
+    } catch (err) {
+      setActionError(translateApiError(err, t));
+    }
   }
 
   return (
@@ -149,11 +169,13 @@ export function QuizEditorPage() {
         </div>
       </div>
       {publishError && <div className="error">{publishError}</div>}
+      {actionError && <div className="error">{actionError}</div>}
       {quiz.status === "draft" && <p className="muted">{t("quiz.publishHint")}</p>}
 
       <div className="card">
         <h2>{t("quiz.settings")}</h2>
         <form onSubmit={onSaveSettings}>
+          {settingsError && <div className="error">{settingsError}</div>}
           <div className="field">
             <label htmlFor="title">{t("quizzes.titleLabel")}</label>
             <input id="title" name="title" defaultValue={quiz.title} required />
@@ -182,6 +204,7 @@ export function QuizEditorPage() {
       <div className="card">
         <h2>{t("quiz.grading")}</h2>
         <form onSubmit={onSaveGrading}>
+          {gradingError && <div className="error">{gradingError}</div>}
           <div className="settings-grid">
             <div className="field">
               <label htmlFor="durationMinutes">{t("quiz.duration")}</label>
