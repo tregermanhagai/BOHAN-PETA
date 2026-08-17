@@ -36,7 +36,7 @@ export function ResultPage() {
         <span className={`result-badge ${result.passed ? "pass" : "fail"}`}>
           {result.passed ? t("result.pass") : t("result.fail")}
         </span>
-        <div className="result-score">{result.score}%</div>
+        <div className="result-score">{Math.round(result.score)}%</div>
         <p dir="auto">{result.feedbackText}</p>
         <p className="muted">{t(`result.endedReason.${result.endedReason}`)}</p>
         <div className="form-actions">

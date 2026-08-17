@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { TopBar } from "./components/TopBar";
+import { Footer } from "./components/Footer";
+import { AccessibilityPage } from "./routes/AccessibilityPage";
 import { LoginPage } from "./routes/teacher/LoginPage";
 import { RegisterPage } from "./routes/teacher/RegisterPage";
 import { CohortsPage } from "./routes/teacher/CohortsPage";
@@ -73,7 +75,10 @@ function AppRoutes() {
         <Route path="/attempt/:id" element={<ExamPage />} />
         <Route path="/attempt/:id/result" element={<ResultPage />} />
         <Route path="/review/:id" element={<ReviewPage />} />
+
+        <Route path="/accessibility" element={<AccessibilityPage />} />
       </Routes>
+      <Footer />
     </>
   );
 }

@@ -22,6 +22,9 @@ export function TopBar() {
             </button>
           </>
         )}
+        <a href="https://wa.me/972545966296" target="_blank" rel="noreferrer">
+          {t("nav.contact")}
+        </a>
         <div className="lang-switch">
           <button
             type="button"

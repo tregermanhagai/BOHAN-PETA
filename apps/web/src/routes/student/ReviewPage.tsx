@@ -29,7 +29,7 @@ export function ReviewPage() {
         <span className={`result-badge ${review.passed ? "pass" : "fail"}`}>
           {review.passed ? t("result.pass") : t("result.fail")}
         </span>
-        <div className="result-score">{review.score}%</div>
+        <div className="result-score">{Math.round(review.score)}%</div>
         <p dir="auto">{review.feedbackText}</p>
       </div>
 

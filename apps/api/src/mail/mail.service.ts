@@ -45,6 +45,7 @@ export class MailService {
 
     const reviewUrl = `${this.frontendUrl}/review/${input.reviewToken}`;
     const resultText = input.passed ? "עברת את הבוחן" : "לא עברת את הבוחן";
+    const displayScore = Math.round(input.score);
 
     try {
       await this.transporter.sendMail({
@@ -55,7 +56,7 @@ export class MailService {
           `שלום ${input.studentName},`,
           "",
           `הבוחן "${input.quizTitle}" הוגש בהצלחה.`,
-          `הציון שלך: ${input.score}%`,
+          `הציון שלך: ${displayScore}%`,
           resultText,
           "",
           `לסקירת התשובות שלך: ${reviewUrl}`,
@@ -64,7 +65,7 @@ export class MailService {
           <div dir="rtl" style="font-family: sans-serif;">
             <p>שלום ${input.studentName},</p>
             <p>הבוחן "${input.quizTitle}" הוגש בהצלחה.</p>
-            <p>הציון שלך: <strong>${input.score}%</strong><br />${resultText}</p>
+            <p>הציון שלך: <strong>${displayScore}%</strong><br />${resultText}</p>
             <p><a href="${reviewUrl}">לסקירת התשובות שלך</a></p>
           </div>
         `,

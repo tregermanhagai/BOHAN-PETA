@@ -47,7 +47,7 @@ export class ScoresService {
           r.nationalId,
           r.quizTitle,
           r.status,
-          r.score !== null ? String(r.score) : "",
+          r.score !== null ? String(Math.round(r.score)) : "",
           r.passed === null ? "" : r.passed ? "Pass" : "Fail",
           r.startedAt,
           r.submittedAt ?? "",

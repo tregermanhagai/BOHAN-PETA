@@ -100,6 +100,28 @@ body {
   color: var(--accent);
 }
 
+.app-version {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  margin-block-start: 24px;
+  border-block-start: 1px solid var(--line);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.footer-copyright a {
+  color: var(--ink-soft);
+}
+
 h1 {
   font-size: 1.5rem;
   margin-block-end: 18px;

@@ -72,7 +72,7 @@ export function ScoresPage() {
     const submitted = (scores ?? []).filter((r) => r.score !== null);
     const passedCount = submitted.filter((r) => r.passed).length;
     const avg = submitted.length
-      ? Math.round((submitted.reduce((sum, r) => sum + (r.score ?? 0), 0) / submitted.length) * 100) / 100
+      ? Math.round(submitted.reduce((sum, r) => sum + (r.score ?? 0), 0) / submitted.length)
       : null;
     return {
       total: scores?.length ?? 0,
@@ -205,7 +205,7 @@ export function ScoresPage() {
                       <td>
                         <span className={`pill status-${r.status}`}>{t(`scores.status.${r.status}`)}</span>
                       </td>
-                      <td>{r.score !== null ? `${r.score}%` : "—"}</td>
+                      <td>{r.score !== null ? `${Math.round(r.score)}%` : "—"}</td>
                       <td>
                         {r.passed === null ? (
                           "—"
