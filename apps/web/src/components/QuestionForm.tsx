@@ -16,12 +16,15 @@ export function QuestionForm({
   initial,
   onSave,
   onCancel,
+  onDelete,
   saving,
   error,
 }: {
   initial: QuestionResponse | null;
   onSave: (dto: UpsertQuestionRequest) => void;
   onCancel: () => void;
+  /** Omitted when creating a new question — there's nothing to delete yet. */
+  onDelete?: () => void;
   saving: boolean;
   error: string | null;
 }) {
@@ -140,6 +143,11 @@ export function QuestionForm({
         <button type="button" className="secondary" onClick={onCancel}>
           {t("common.cancel")}
         </button>
+        {onDelete && (
+          <button type="button" className="link danger" onClick={onDelete}>
+            {t("common.delete")}
+          </button>
+        )}
       </div>
     </form>
   );

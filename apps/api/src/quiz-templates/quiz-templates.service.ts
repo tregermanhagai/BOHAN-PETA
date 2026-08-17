@@ -60,6 +60,14 @@ function toQuestionResponse(row: QuestionWithOptions): QuestionResponse {
   };
 }
 
+/** Default pass/fail feedback text for newly created quizzes — teachers can freely edit or clear it afterward. */
+function defaultFeedback(language: string): { pass: string; fail: string } {
+  if (language === "he") {
+    return { pass: "עברת", fail: "לא עברת את הבוחן" };
+  }
+  return { pass: "You passed!", fail: "You did not pass the exam." };
+}
+
 function validateOptionCorrectness(type: "single" | "multi", options: { isCorrect: boolean }[]) {
   const correctCount = options.filter((o) => o.isCorrect).length;
   if (correctCount === 0) {
@@ -75,12 +83,16 @@ export class QuizTemplatesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(teacherId: string, dto: CreateQuizTemplateDto): Promise<QuizTemplateResponse> {
+    const language = dto.language ?? "en";
+    const feedback = defaultFeedback(language);
     const row = await this.prisma.quizTemplate.create({
       data: {
         teacherId,
         title: dto.title,
-        language: dto.language ?? "en",
+        language,
         difficulty: dto.difficulty ?? null,
+        passFeedbackText: feedback.pass,
+        failFeedbackText: feedback.fail,
       },
     });
     return { ...toTemplateBase(row), questions: [] };
@@ -215,6 +227,12 @@ export class QuizTemplatesService {
       });
     });
     return toQuestionResponse(row);
+  }
+
+  /** Flags a quiz as having at least one AI-generated question (informational only — doesn't gate anything). */
+  async markAiGenerated(teacherId: string, quizTemplateId: string): Promise<void> {
+    await this.getOwnedTemplateOrThrow(teacherId, quizTemplateId);
+    await this.prisma.quizTemplate.update({ where: { id: quizTemplateId }, data: { aiGenerated: true } });
   }
 
   async deleteQuestion(teacherId: string, quizTemplateId: string, questionId: string): Promise<void> {

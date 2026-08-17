@@ -48,6 +48,11 @@ export default defineConfig({
       // real inbox — this override makes that structurally impossible.
       SMTP_USER: "",
       SMTP_APP_PASSWORD: "",
+      // Same reasoning: a real key here would let the AI-generation tests
+      // (or any future one exercising that route) trigger real, billed
+      // Gemini calls — GeminiService treats a blank key as "unconfigured"
+      // and fails the request cleanly instead.
+      GEMINI_API_KEY: "",
     },
   },
 });

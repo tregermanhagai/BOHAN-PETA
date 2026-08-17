@@ -14,3 +14,4 @@ apps/api/dist-test/
 apps/api-tests/test-results/
 apps/api-tests/playwright-report/
 apps/api-tests/.cache/
+notes.txt

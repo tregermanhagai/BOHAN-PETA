@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
+import { reorderById } from "../common/shuffle.util";
 import type {
   AttemptQuestionsResponse,
   AttemptResultResponse,
@@ -38,6 +39,12 @@ function isCorrectAnswer(question: QuestionWithOptions, selectedOptionIds: strin
   return true;
 }
 
+/** Attempt.optionOrder is a Prisma Json column: { [questionId]: optionId[] }, captured once at join (students.service.ts). */
+function optionOrderFor(attempt: AttemptRow, questionId: string): string[] {
+  const map = attempt.optionOrder as Record<string, string[]> | null;
+  return map?.[questionId] ?? [];
+}
+
 @Injectable()
 export class AttemptsService {
   constructor(
@@ -53,13 +60,14 @@ export class AttemptsService {
     return {
       questions: attempt.questionOrder.map((qid) => {
         const q = questions.get(qid)!;
+        const orderedOptions = reorderById(q.options, optionOrderFor(attempt, qid));
         return {
           id: q.id,
           text: q.text,
           type: q.type,
           // Client-safe: never send which option is correct while the
           // exam is in progress.
-          options: q.options.map((o) => ({ id: o.id, text: o.text })),
+          options: orderedOptions.map((o) => ({ id: o.id, text: o.text })),
           selectedOptionIds: answersByQuestion.get(qid) ?? [],
         };
       }),
@@ -117,11 +125,12 @@ export class AttemptsService {
     const reviewQuestions = attempt.questionOrder.map((qid) => {
       const q = questions.get(qid)!;
       const selected = answersByQuestion.get(qid) ?? [];
+      const orderedOptions = reorderById(q.options, optionOrderFor(attempt, qid));
       return {
         id: q.id,
         text: q.text,
         type: q.type,
-        options: q.options.map((o) => ({
+        options: orderedOptions.map((o) => ({
           id: o.id,
           text: o.text,
           ...(template.revealAnswerKey ? { isCorrect: o.isCorrect } : {}),

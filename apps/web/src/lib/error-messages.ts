@@ -37,6 +37,13 @@ const MESSAGE_KEYS: Record<string, string> = {
   "Question not part of this attempt": "errors.questionNotInAttempt",
   "This exam is still in progress": "errors.reviewInProgress",
   "Attempt not found": "errors.attemptNotFound",
+  "AI generation is not configured": "errors.aiNotConfigured",
+  "AI generation request failed — please try again": "errors.aiRequestFailed",
+  "The AI service is currently busy — please try again in a moment": "errors.aiBusy",
+  "AI generation returned an unreadable response — please try again": "errors.aiRequestFailed",
+  "AI generation did not return any questions — try a different topic": "errors.aiNoQuestions",
+  "Provide a topic, a source file, or both": "errors.aiNeedTopicOrFile",
+  "Source file must be a PDF or DOCX document": "errors.aiUnsupportedFileType",
 };
 
 /** `"A quiz needs at least 3 questions to publish (has 1)"` — the one backend message with interpolated numbers. */

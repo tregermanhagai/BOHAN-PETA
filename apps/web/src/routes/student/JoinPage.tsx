@@ -51,7 +51,7 @@ export function JoinPage() {
       <div className="page">
         <h1>{t("join.warningsTitle")}</h1>
         <div className="card">
-          {error && <div className="error">{error}</div>}
+          {error && <div className="error error-large">{error}</div>}
           <ul className="warning-list">
             <li>{t("join.warning1")}</li>
             <li>{t("join.warning2")}</li>

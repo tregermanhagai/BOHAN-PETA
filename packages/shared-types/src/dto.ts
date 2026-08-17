@@ -95,6 +95,34 @@ export interface UpsertQuestionRequest {
 export type QuestionResponse = Question & { options: AnswerOption[] };
 
 // ---------------------------------------------------------------
+// AI-assisted generation (F-10–F-12, PRD section 6)
+// ---------------------------------------------------------------
+
+/** "mixed" lets Gemini choose single vs. multi per question; the other two force every generated question to that type. */
+export type GenerateQuestionsQuestionType = QuestionType | "mixed";
+
+export interface GenerateQuestionsRequest {
+  /**
+   * What the questions should be about, e.g. "QA role in Scrum team".
+   * Optional when a source file is attached (F-10) — the file becomes the
+   * subject matter and topic becomes an optional focus/filter on top of it.
+   * Required when no file is attached.
+   */
+  topic?: string;
+  /** 3–20, matching the manual-authoring bounds (F-11). */
+  questionCount: number;
+  /** 2–6, matching the manual-authoring bounds (F-11). */
+  optionsPerQuestion: number;
+  questionType: GenerateQuestionsQuestionType;
+  /** Defaults to the quiz template's own difficulty/language if omitted. */
+  difficulty?: QuizDifficulty | null;
+  language?: string;
+}
+
+/** Newly created questions, in the same shape as manual authoring — added as normal (draft) Question rows for the teacher to review/edit before publishing (F-12). */
+export type GenerateQuestionsResponse = QuestionResponse[];
+
+// ---------------------------------------------------------------
 // Quiz assignments (F-21/F-22, PRD 3.3)
 // ---------------------------------------------------------------
 

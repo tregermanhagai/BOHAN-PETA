@@ -28,6 +28,17 @@ export class ApiError extends Error {
   }
 }
 
+async function throwApiError(res: Response): Promise<never> {
+  let message: string | string[] = res.statusText;
+  try {
+    const data = await res.json();
+    message = data.message ?? message;
+  } catch {
+    /* response had no JSON body */
+  }
+  throw new ApiError(res.status, Array.isArray(message) ? message.join(", ") : message);
+}
+
 async function request<TResponse>(
   path: string,
   options: { method?: string; body?: unknown; auth?: boolean } = {},
@@ -46,18 +57,25 @@ async function request<TResponse>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const data = await res.json();
-      message = data.message ?? message;
-    } catch {
-      /* response had no JSON body */
-    }
-    throw new ApiError(res.status, Array.isArray(message) ? message.join(", ") : message);
-  }
+  if (!res.ok) return throwApiError(res);
 
   if (res.status === 204) return undefined as TResponse;
+  return (await res.json()) as TResponse;
+}
+
+/**
+ * Like `request`, but sends a FormData body (multipart/form-data) instead
+ * of JSON — needed for file uploads. Never set Content-Type by hand here:
+ * the browser adds the multipart boundary itself, which is required for
+ * the server to parse the body correctly.
+ */
+async function requestForm<TResponse>(path: string, formData: FormData): Promise<TResponse> {
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers, body: formData });
+  if (!res.ok) return throwApiError(res);
   return (await res.json()) as TResponse;
 }
 
@@ -72,16 +90,7 @@ export async function downloadAuthenticated(path: string, fallbackFilename: stri
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, { headers });
-  if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const data = await res.json();
-      message = data.message ?? message;
-    } catch {
-      /* response had no JSON body */
-    }
-    throw new ApiError(res.status, Array.isArray(message) ? message.join(", ") : message);
-  }
+  if (!res.ok) return throwApiError(res);
 
   const disposition = res.headers.get("Content-Disposition") ?? "";
   const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
@@ -109,4 +118,5 @@ export const api = {
     request<T>(path, { method: "PUT", body, auth: opts?.auth ?? true }),
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  postForm: <T>(path: string, formData: FormData) => requestForm<T>(path, formData),
 };

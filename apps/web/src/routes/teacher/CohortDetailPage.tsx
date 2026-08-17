@@ -9,6 +9,22 @@ import type {
 import { api } from "../../lib/api-client";
 import { translateApiError } from "../../lib/error-messages";
 
+const HOURS_48_MS = 48 * 60 * 60 * 1000;
+
+/** Local (not UTC) time in the format <input type="datetime-local"> expects. */
+function toDatetimeLocalValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function defaultOpenAt(): string {
+  return toDatetimeLocalValue(new Date());
+}
+
+function defaultCloseAt(): string {
+  return toDatetimeLocalValue(new Date(Date.now() + HOURS_48_MS));
+}
+
 export function CohortDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
@@ -22,8 +38,8 @@ export function CohortDetailPage() {
   const [selectedQuizId, setSelectedQuizId] = useState("");
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [shuffle, setShuffle] = useState(true);
-  const [openAt, setOpenAt] = useState("");
-  const [closeAt, setCloseAt] = useState("");
+  const [openAt, setOpenAt] = useState(defaultOpenAt);
+  const [closeAt, setCloseAt] = useState(defaultCloseAt);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   async function onCopyAccessCode(code: string) {
@@ -64,8 +80,8 @@ export function CohortDetailPage() {
         maxAttempts,
         shuffle,
       });
-      setOpenAt("");
-      setCloseAt("");
+      setOpenAt(defaultOpenAt());
+      setCloseAt(defaultCloseAt());
       await load();
     } catch (err) {
       setError(translateApiError(err, t));
@@ -119,7 +135,7 @@ export function CohortDetailPage() {
       <div className="page-head">
         <h1>{cohort.name}</h1>
         <div className="form-actions">
-          <Link className="secondary" to={`/cohorts/${id}/scores`}>
+          <Link className="primary" to={`/cohorts/${id}/scores`}>
             {t("scores.title")}
           </Link>
           <button className="link danger" type="button" onClick={onDeleteCohort}>

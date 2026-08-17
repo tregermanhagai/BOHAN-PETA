@@ -193,6 +193,14 @@ model Attempt {
   // so page numbering stays stable across navigation/resume instead of
   // being re-shuffled on every GET /attempts/:id/questions call.
   questionOrder    String[]            @map("question_order")
+  // Per-question shuffled answer-option order, same stability rationale
+  // as questionOrder above. { [questionId]: optionId[] }. Completes what
+  // the assignment's "shuffle" toggle already promises ("shuffle
+  // question/answer order") — previously only question order was
+  // actually shuffled, so a quiz whose options happened to be authored
+  // (or AI-generated) with the correct answer always first showed that
+  // same fixed order to every student regardless of the toggle.
+  optionOrder      Json                @map("option_order")
 
   answers AttemptAnswer[]
 

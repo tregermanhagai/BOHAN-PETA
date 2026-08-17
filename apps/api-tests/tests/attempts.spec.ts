@@ -199,6 +199,44 @@ test.describe("GET /attempts/:id/questions", () => {
     const res = await request.get("/attempts/00000000-0000-0000-0000-000000000000/questions");
     expect(res.status()).toBe(404);
   });
+
+  test("does not shuffle option order when the assignment has shuffle off", async ({
+    authedRequest,
+    request,
+  }) => {
+    const { assignment, questions } = await setUpExamReadyQuiz(authedRequest, { shuffle: false });
+    const { attemptId } = await joinAttempt(request, { accessCode: assignment.accessCode });
+
+    const res = await request.get(`/attempts/${attemptId}/questions`);
+    const body = await res.json();
+    for (const authored of questions) {
+      const fetched = body.questions.find((q: { id: string }) => q.id === authored.id);
+      expect(fetched.options.map((o: { id: string }) => o.id)).toEqual(authored.options.map((o) => o.id));
+    }
+  });
+
+  test("shuffled option order includes every option exactly once and stays stable across repeated fetches (resume)", async ({
+    authedRequest,
+    request,
+  }) => {
+    const { assignment, questions } = await setUpExamReadyQuiz(authedRequest, { shuffle: true });
+    const { attemptId } = await joinAttempt(request, { accessCode: assignment.accessCode });
+
+    const first = await (await request.get(`/attempts/${attemptId}/questions`)).json();
+    const second = await (await request.get(`/attempts/${attemptId}/questions`)).json();
+
+    for (const authored of questions) {
+      const f1 = first.questions.find((q: { id: string }) => q.id === authored.id);
+      const f2 = second.questions.find((q: { id: string }) => q.id === authored.id);
+      const ids1 = f1.options.map((o: { id: string }) => o.id);
+      const ids2 = f2.options.map((o: { id: string }) => o.id);
+
+      // Stable across fetches, and no data loss — same set, in the same
+      // (once-shuffled-at-join, then persisted) order every time.
+      expect(ids2).toEqual(ids1);
+      expect(new Set(ids1)).toEqual(new Set(authored.options.map((o) => o.id)));
+    }
+  });
 });
 
 test.describe("PUT /attempts/:id/answers/:questionId", () => {
@@ -401,5 +439,23 @@ test.describe("GET /attempts/:id/review", () => {
 
     const res = await request.get(`/attempts/${attemptId}/review`);
     expect(res.status()).toBe(400);
+  });
+
+  test("shows options in the same order the student saw them during the exam", async ({
+    authedRequest,
+    request,
+  }) => {
+    const { assignment, questions } = await setUpExamReadyQuiz(authedRequest, { shuffle: true });
+    const { attemptId } = await joinAttempt(request, { accessCode: assignment.accessCode });
+
+    const duringExam = await (await request.get(`/attempts/${attemptId}/questions`)).json();
+    await request.post(`/attempts/${attemptId}/submit`);
+    const review = await (await request.get(`/attempts/${attemptId}/review`)).json();
+
+    for (const authored of questions) {
+      const seen = duringExam.questions.find((q: { id: string }) => q.id === authored.id);
+      const reviewed = review.questions.find((q: { id: string }) => q.id === authored.id);
+      expect(reviewed.options.map((o: { id: string }) => o.id)).toEqual(seen.options.map((o: { id: string }) => o.id));
+    }
   });
 });

@@ -254,6 +254,20 @@ h1 {
   margin-block-end: 12px;
 }
 
+/* Used for the student-facing join/exam-access error (e.g. "exam closed") —
+   this is the one moment a student needs to actually read and understand
+   an error rather than just noticing one exists, so it gets a much larger,
+   bolder treatment than the compact admin-form .error. */
+.error-large {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.4;
+  padding: 12px 16px;
+  border: 1px solid var(--crit);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--crit) 10%, transparent);
+}
+
 .cohort-row,
 .list-row {
   display: flex;

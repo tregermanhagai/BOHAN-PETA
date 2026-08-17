@@ -17,7 +17,15 @@ export class StudentsService {
     const assignment = await this.prisma.quizAssignment.findUnique({
       where: { accessCode: dto.accessCode },
       include: {
-        quizTemplate: { include: { questions: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } } },
+        quizTemplate: {
+          include: {
+            questions: {
+              where: { isActive: true },
+              orderBy: { sortOrder: "asc" },
+              include: { options: true },
+            },
+          },
+        },
       },
     });
     if (!assignment) {
@@ -62,11 +70,22 @@ export class StudentsService {
     const questionIds = assignment.quizTemplate.questions.map((q) => q.id);
     const questionOrder = assignment.shuffle ? shuffled(questionIds) : questionIds;
 
+    // Completes what the assignment's "shuffle" toggle already promises
+    // ("shuffle question/answer order") — captured once here, same
+    // stability rationale as questionOrder (F-04d), so a question's
+    // option order doesn't rearrange itself on navigation/resume.
+    const optionOrder: Record<string, string[]> = {};
+    for (const q of assignment.quizTemplate.questions) {
+      const optionIds = q.options.map((o) => o.id);
+      optionOrder[q.id] = assignment.shuffle ? shuffled(optionIds) : optionIds;
+    }
+
     const attempt = await this.prisma.attempt.create({
       data: {
         quizAssignmentId: assignment.id,
         studentId: student.id,
         questionOrder,
+        optionOrder,
       },
     });
 
