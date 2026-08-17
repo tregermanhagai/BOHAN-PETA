@@ -11,6 +11,7 @@
     "dev:web": "npm run dev --workspace apps/web",
     "dev:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-stop.ps1",
     "dev:clean": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-clean.ps1",
+    "version:bump": "node scripts/bump-version.js",
     "build": "npm run build --workspace packages/shared-types && npm run build --workspace apps/api && npm run build --workspace apps/web",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",

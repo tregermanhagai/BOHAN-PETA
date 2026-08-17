@@ -16,9 +16,7 @@ export function Footer() {
         </a>{" "}
         {year} ©
       </span>
-      <span className="app-version" title={`Built ${__BUILD_TIME__}`}>
-        v{version} ({__GIT_SHA__})
-      </span>
+      <span className="app-version">v{version}</span>
     </footer>
   );
 }
