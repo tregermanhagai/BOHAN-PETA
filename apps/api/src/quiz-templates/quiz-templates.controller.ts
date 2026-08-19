@@ -75,6 +75,7 @@ export class QuizTemplatesController {
   }
 
   @Delete(":id/questions/:qid")
+  @HttpCode(HttpStatus.NO_CONTENT)
   deleteQuestion(
     @CurrentTeacher() teacher: CurrentTeacherPayload,
     @Param("id") id: string,

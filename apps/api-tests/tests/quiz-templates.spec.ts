@@ -223,7 +223,7 @@ test.describe("Question authoring (F-11/F-13/F-14)", () => {
     const question = await addQuestion(authedRequest, quiz.id);
 
     const del = await authedRequest.delete(`/quiz-templates/${quiz.id}/questions/${question.id}`);
-    expect(del.status()).toBe(200);
+    expect(del.status()).toBe(204);
 
     const fetched = await (await authedRequest.get(`/quiz-templates/${quiz.id}`)).json();
     expect(fetched.questions.find((q: { id: string }) => q.id === question.id)).toBeUndefined();

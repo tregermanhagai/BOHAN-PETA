@@ -40,6 +40,11 @@ export default defineConfig({
       JWT_SECRET: TEST_JWT_SECRET,
       JWT_EXPIRES_IN: "1h",
       PORT: API_TEST_PORT,
+      // Relaxes rate limiting to a practically-unlimited ceiling (see
+      // common/throttle.util.ts) — the suite legitimately makes far more
+      // requests/minute against shared endpoints (e.g. every test that
+      // needs a teacher calls /auth/register) than any real user would.
+      NODE_ENV: "test",
       // Explicitly blanked, not just omitted: tests join real-looking but
       // fake @example.test addresses on every run, and MailService no-ops
       // when these are empty. Leaving them unset would let this server

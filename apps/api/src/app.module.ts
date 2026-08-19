@@ -1,5 +1,8 @@
 import { Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { throttleLimit } from "./common/throttle.util";
 import { PrismaModule } from "./prisma/prisma.module";
 import { MailModule } from "./mail/mail.module";
 import { HealthController } from "./health/health.controller";
@@ -15,6 +18,10 @@ import { AiGenerationModule } from "./ai-generation/ai-generation.module";
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Global default (60 req/min/IP) — most routes never override this.
+    // Auth and the public join endpoint set their own stricter/looser
+    // limits via @Throttle (see auth.controller.ts, students.controller.ts).
+    ThrottlerModule.forRoot([{ name: "default", ttl: 60_000, limit: throttleLimit(60) }]),
     PrismaModule,
     MailModule,
     AuthModule,
@@ -27,5 +34,6 @@ import { AiGenerationModule } from "./ai-generation/ai-generation.module";
     AiGenerationModule,
   ],
   controllers: [HealthController],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
