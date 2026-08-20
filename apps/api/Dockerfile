@@ -23,8 +23,8 @@ COPY packages/shared-types packages/shared-types
 COPY apps/api apps/api
 
 RUN npm run build --workspace packages/shared-types
-RUN npm run build --workspace apps/api
 RUN npm run prisma:generate --workspace apps/api
+RUN npm run build --workspace apps/api
 
 FROM node:20-alpine AS runtime
 WORKDIR /repo
