@@ -1,7 +1,16 @@
 import "reflect-metadata";
+import { setDefaultResultOrder } from "node:dns";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import { AppModule } from "./app.module";
+
+// Some hosts (e.g. Railway) have no outbound IPv6 route, but Node's default
+// DNS resolution can still return/prefer a dual-stack host's IPv6 address
+// (Gmail's SMTP server does) — unlike browsers, plain net/tls connections
+// don't fall back to IPv4 when that fails, so every send attempt died with
+// ENETUNREACH. Preferring IPv4 first avoids ever trying the unreachable
+// address in the first place.
+setDefaultResultOrder("ipv4first");
 
 const INSECURE_DEFAULT_JWT_SECRET = "dev-only-insecure-secret";
 
