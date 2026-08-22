@@ -12,6 +12,7 @@
   "auth.logout": "Log out",
   "nav.cohorts": "Cohorts",
   "nav.quizzes": "Quizzes",
+  "nav.login": "Teacher login",
   "nav.contact": "Contact us",
 
   "footer.accessibility": "Accessibility",

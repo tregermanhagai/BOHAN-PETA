@@ -13,7 +13,7 @@ export function TopBar() {
         {t("app.name")}
       </Link>
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        {isAuthenticated && (
+        {isAuthenticated ? (
           <>
             <Link to="/cohorts">{t("nav.cohorts")}</Link>
             <Link to="/quizzes">{t("nav.quizzes")}</Link>
@@ -21,6 +21,8 @@ export function TopBar() {
               {t("auth.logout")}
             </button>
           </>
+        ) : (
+          <Link to="/login">{t("nav.login")}</Link>
         )}
         <a href="https://wa.me/972545966296" target="_blank" rel="noreferrer">
           {t("nav.contact")}
