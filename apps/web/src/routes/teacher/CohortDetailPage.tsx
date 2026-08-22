@@ -82,8 +82,17 @@ export function CohortDetailPage() {
     try {
       await api.post(`/cohorts/${id}/assignments`, {
         quizTemplateId: selectedQuizId,
-        openAt: openAt || null,
-        closeAt: closeAt || null,
+        // <input type="datetime-local"> gives a naive string with no
+        // timezone (e.g. "2026-08-22T13:38") — that's the browser's local
+        // wall-clock time, but a server running in a different timezone
+        // (e.g. UTC on Railway) would otherwise reparse the same naive
+        // string as ITS OWN local time, shifting every open/close time by
+        // the difference between the two. Converting to a real Date first
+        // (parsed correctly as local time, since this code runs in the
+        // browser) and serializing with toISOString() sends an
+        // unambiguous UTC instant instead.
+        openAt: openAt ? new Date(openAt).toISOString() : null,
+        closeAt: closeAt ? new Date(closeAt).toISOString() : null,
         maxAttempts,
         shuffle,
       });
@@ -255,11 +264,11 @@ export function CohortDetailPage() {
                 </button>
               </div>
               <div className="list-row-meta">{t("assignments.accessCodeHint")}</div>
-              <div className="list-row-meta">
-                {t("assignments.joinUrl")}:{" "}
-                <a href={joinUrl} target="_blank" rel="noreferrer">
+              <div className="list-row-meta">{t("assignments.joinUrl")}:</div>
+              <div className="join-url-row">
+                <a className="join-url-link" href={joinUrl} target="_blank" rel="noreferrer">
                   {joinUrl}
-                </a>{" "}
+                </a>
                 <button className="link" type="button" onClick={onCopyJoinUrl}>
                   {copiedJoinUrl ? t("assignments.copied") : t("assignments.copyCode")}
                 </button>

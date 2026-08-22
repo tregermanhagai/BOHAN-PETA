@@ -68,6 +68,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: nowrap;
   gap: 12px;
   padding: 14px 20px;
   border-block-end: 1px solid var(--line);
@@ -78,6 +79,39 @@ body {
   font-weight: 700;
   color: var(--accent-strong);
   text-decoration: none;
+  /* Without this, the hyphen in "BOHAN-PETA" is treated as a valid line-break
+     point, so squeezing this flex item on narrow screens wraps it onto two
+     lines instead of shrinking/eliding — see the @media rules below. */
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .topbar a,
+  .topbar button {
+    font-size: 0.8rem;
+  }
+
+  .brand {
+    font-size: 0.85rem;
+  }
+
+  .lang-switch button {
+    font-size: 0.68rem;
+    padding: 3px 7px;
+  }
+}
+
+@media (max-width: 360px) {
+  /* Last resort once even the shrunk sizes above don't fit — drop the
+     brand text entirely rather than let anything wrap or overflow. */
+  .brand {
+    display: none;
+  }
 }
 
 .lang-switch {
@@ -681,6 +715,18 @@ h1 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.join-url-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.join-url-link {
+  font-size: 0.82rem;
+  word-break: break-all;
 }
 
 .access-code {
