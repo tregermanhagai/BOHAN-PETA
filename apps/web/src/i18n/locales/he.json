@@ -168,6 +168,7 @@
   "exam.selectMultiple": "בחרו את כל התשובות המתאימות",
   "exam.typeYourAnswer": "הקלידו את תשובתכם ({{points}} נקודות)",
   "exam.graceWarning": "⚠️ עזבתם את מסך הבוחן! חיזרו תוך {{seconds}} שניות אחרת הבוחן יסתיים אוטומטית.",
+  "exam.tabWarning": "⚠️ {{seconds}}... חיזרו לבוחן!",
   "exam.loading": "טוען את הבוחן שלכם…",
 
   "result.title": "תוצאה",

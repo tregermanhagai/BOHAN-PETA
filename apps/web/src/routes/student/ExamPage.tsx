@@ -6,7 +6,7 @@ import { api } from "../../lib/api-client";
 import { translateApiError } from "../../lib/error-messages";
 import { useAuth } from "../../auth/AuthContext";
 
-const FOCUS_LOSS_GRACE_MS = 3000;
+const FOCUS_LOSS_GRACE_MS = 10_000;
 
 function formatTime(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
@@ -28,6 +28,10 @@ export function ExamPage() {
   // Seconds left in the focus-loss grace period, or null when not in it —
   // drives the on-screen countdown modal below.
   const [graceCountdown, setGraceCountdown] = useState<number | null>(null);
+  // Captured once, before anything ever overwrites it — the modal above
+  // can't be seen in a backgrounded tab, but the tab's title bar/strip
+  // stays visible regardless, so that's flashed as a warning too.
+  const originalTitleRef = useRef(document.title);
 
   // Ref, not state: the ending flag must be read synchronously inside
   // event handlers (timer tick, blur) to guarantee submit fires exactly
@@ -134,6 +138,20 @@ export function ExamPage() {
       cancelGrace();
     };
   }, [finishAttempt]);
+
+  // The on-screen modal can't be seen in a backgrounded tab, but the tab's
+  // own title (in the tab strip/title bar) stays visible regardless of
+  // focus — flash a countdown there too, so switching tabs isn't
+  // completely silent even though nothing can pop up over the active tab.
+  useEffect(() => {
+    document.title = graceCountdown !== null ? t("exam.tabWarning", { seconds: graceCountdown }) : originalTitleRef.current;
+  }, [graceCountdown, t]);
+
+  useEffect(() => {
+    return () => {
+      document.title = originalTitleRef.current;
+    };
+  }, []);
 
   // Native "leave site?" confirmation for closing the tab, refreshing, or
   // navigating away by URL — the one case where the browser can actually

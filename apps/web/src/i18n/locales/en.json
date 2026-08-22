@@ -168,6 +168,7 @@
   "exam.selectMultiple": "Select all that apply",
   "exam.typeYourAnswer": "Type your answer ({{points}} points)",
   "exam.graceWarning": "⚠️ You left the exam screen! Return within {{seconds}} seconds or the exam will end automatically.",
+  "exam.tabWarning": "⚠️ {{seconds}}... Return to the exam!",
   "exam.loading": "Loading your exam…",
 
   "result.title": "Result",
