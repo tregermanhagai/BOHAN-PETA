@@ -327,11 +327,22 @@ h1 {
 .cohort-row,
 .list-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   gap: 10px;
   padding: 12px 0;
   border-block-end: 1px solid var(--line);
+}
+
+.cohort-row {
+  align-items: center;
+}
+
+.list-row {
+  /* Rows here can have very unequal column heights (e.g. the assignment
+     access-code/join-link column is several lines tall) — top-align
+     instead of vertically centering, so a short title doesn't float to
+     the middle of a much taller row. */
+  align-items: flex-start;
 }
 
 .cohort-row:last-child,
@@ -711,17 +722,17 @@ h1 {
   color: var(--accent-strong);
 }
 
-.access-code-row {
+/* One shared column for every assignment-row action link (copy code,
+   copy join link, delete) so they line up on the same edge regardless
+   of how long the neighboring text (access code, join URL) happens to
+   be — those used to sit inline right after their related text, which
+   pushed each button to a different position depending on that text's
+   length. */
+.assignment-actions {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.join-url-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
 }
 
 .join-url-link {
