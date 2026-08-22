@@ -25,6 +25,9 @@ export function ExamPage() {
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // Seconds left in the focus-loss grace period, or null when not in it —
+  // drives the on-screen countdown modal below.
+  const [graceCountdown, setGraceCountdown] = useState<number | null>(null);
 
   // Ref, not state: the ending flag must be read synchronously inside
   // event handlers (timer tick, blur) to guarantee submit fires exactly
@@ -85,19 +88,36 @@ export function ExamPage() {
 
   // Focus-loss auto-submit with a short grace period (v2.5, 3.8) — absorbs
   // a brief notification-shade peek or address-bar tap without ending a
-  // genuine app-switch any less promptly.
+  // genuine app-switch any less promptly. Ticks a visible countdown
+  // (graceCountdown) rather than firing one silent timeout, so a student
+  // who's still looking at the screen (e.g. clicked just outside the
+  // browser window without truly switching away) sees a clear, active
+  // warning instead of the exam just quietly ending.
   useEffect(() => {
-    let graceTimer: ReturnType<typeof setTimeout> | null = null;
+    let graceInterval: ReturnType<typeof setInterval> | null = null;
 
     function startGrace() {
-      if (graceTimer || endingRef.current) return;
-      graceTimer = setTimeout(() => finishAttempt("auto-submit"), FOCUS_LOSS_GRACE_MS);
+      if (graceInterval || endingRef.current) return;
+      let secondsLeft = Math.ceil(FOCUS_LOSS_GRACE_MS / 1000);
+      setGraceCountdown(secondsLeft);
+      graceInterval = setInterval(() => {
+        secondsLeft -= 1;
+        if (secondsLeft <= 0) {
+          if (graceInterval) clearInterval(graceInterval);
+          graceInterval = null;
+          setGraceCountdown(null);
+          finishAttempt("auto-submit");
+          return;
+        }
+        setGraceCountdown(secondsLeft);
+      }, 1000);
     }
     function cancelGrace() {
-      if (graceTimer) {
-        clearTimeout(graceTimer);
-        graceTimer = null;
+      if (graceInterval) {
+        clearInterval(graceInterval);
+        graceInterval = null;
       }
+      setGraceCountdown(null);
     }
     function onVisibilityChange() {
       if (document.hidden) startGrace();
@@ -196,6 +216,14 @@ export function ExamPage() {
       )}
 
       <p className="exam-leave-warning">{t("exam.leaveWarning")}</p>
+
+      {graceCountdown !== null && (
+        <div className="grace-overlay" role="alertdialog" aria-live="assertive">
+          <div className="grace-modal">
+            <p>{t("exam.graceWarning", { seconds: graceCountdown })}</p>
+          </div>
+        </div>
+      )}
 
       <div className="question-navigator">
         {questions.map((q, i) => (

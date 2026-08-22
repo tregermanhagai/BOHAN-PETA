@@ -38,7 +38,11 @@ export function ResultPage() {
         </span>
         <div className="result-score">{Math.round(result.score)}%</div>
         <p dir="auto">{result.feedbackText}</p>
-        <p className="muted">{t(`result.endedReason.${result.endedReason}`)}</p>
+        {result.endedReason === "focus_loss" ? (
+          <p className="error-large">{t(`result.endedReason.${result.endedReason}`)}</p>
+        ) : (
+          <p className="muted">{t(`result.endedReason.${result.endedReason}`)}</p>
+        )}
         <div className="form-actions">
           <Link className="secondary" to={`/review/${result.reviewToken}`}>
             {t("result.reviewLink")}

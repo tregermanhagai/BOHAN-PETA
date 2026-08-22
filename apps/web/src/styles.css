@@ -575,6 +575,35 @@ h1 {
   color: var(--crit);
 }
 
+/* Shown the instant focus is lost (tab/app switch, click outside the
+   window) — a student who's still looking at the screen (didn't fully
+   switch away) sees this immediately instead of the exam just silently
+   ending a few seconds later with no visible warning. */
+.grace-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: color-mix(in srgb, black 55%, transparent);
+}
+
+.grace-modal {
+  max-width: 420px;
+  padding: 24px 28px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 2px solid var(--crit);
+  color: var(--crit);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
 .question-navigator {
   display: flex;
   flex-wrap: wrap;
