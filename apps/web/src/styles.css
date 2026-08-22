@@ -604,6 +604,10 @@ h1 {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
+.grace-modal .primary {
+  margin-block-start: 16px;
+}
+
 .question-navigator {
   display: flex;
   flex-wrap: wrap;

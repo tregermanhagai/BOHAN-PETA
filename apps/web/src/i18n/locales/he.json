@@ -169,6 +169,8 @@
   "exam.typeYourAnswer": "הקלידו את תשובתכם ({{points}} נקודות)",
   "exam.graceWarning": "⚠️ עזבתם את מסך הבוחן! חיזרו תוך {{seconds}} שניות אחרת הבוחן יסתיים אוטומטית.",
   "exam.tabWarning": "⚠️ {{seconds}}... חיזרו לבוחן!",
+  "exam.graceAckMessage": "כמעט ואיבדתם את הבוחן! עזבתם את המסך. אנא אשרו שקראתם את ההודעה כדי להמשיך.",
+  "exam.graceAcknowledgeButton": "הבנתי, המשך בבוחן",
   "exam.loading": "טוען את הבוחן שלכם…",
 
   "result.title": "תוצאה",

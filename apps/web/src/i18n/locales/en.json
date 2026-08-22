@@ -169,6 +169,8 @@
   "exam.typeYourAnswer": "Type your answer ({{points}} points)",
   "exam.graceWarning": "⚠️ You left the exam screen! Return within {{seconds}} seconds or the exam will end automatically.",
   "exam.tabWarning": "⚠️ {{seconds}}... Return to the exam!",
+  "exam.graceAckMessage": "You nearly lost your exam! You left the screen. Please confirm you've read this to continue.",
+  "exam.graceAcknowledgeButton": "I understand, continue",
   "exam.loading": "Loading your exam…",
 
   "result.title": "Result",

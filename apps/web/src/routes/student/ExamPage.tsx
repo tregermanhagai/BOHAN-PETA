@@ -28,6 +28,11 @@ export function ExamPage() {
   // Seconds left in the focus-loss grace period, or null when not in it —
   // drives the on-screen countdown modal below.
   const [graceCountdown, setGraceCountdown] = useState<number | null>(null);
+  // True once the student has returned before the countdown ran out — the
+  // warning then freezes and stays up until they explicitly acknowledge
+  // it, rather than silently vanishing the moment focus comes back (a
+  // glance-and-continue return shouldn't let the warning go unnoticed).
+  const [awaitingGraceAck, setAwaitingGraceAck] = useState(false);
   // Captured once, before anything ever overwrites it — the modal above
   // can't be seen in a backgrounded tab, but the tab's title bar/strip
   // stays visible regardless, so that's flashed as a warning too.
@@ -98,6 +103,10 @@ export function ExamPage() {
   // browser window without truly switching away) sees a clear, active
   // warning instead of the exam just quietly ending.
   useEffect(() => {
+    // While a warning is up awaiting acknowledgment, don't listen for a
+    // fresh blur/hidden — the student is already on the hook for the one
+    // they haven't dismissed yet. Listening resumes once they acknowledge.
+    if (awaitingGraceAck) return;
     let graceInterval: ReturnType<typeof setInterval> | null = null;
 
     function startGrace() {
@@ -116,36 +125,47 @@ export function ExamPage() {
         setGraceCountdown(secondsLeft);
       }, 1000);
     }
-    function cancelGrace() {
+    // Returned in time — stop the countdown from ending the exam, but
+    // freeze the warning up rather than dismissing it automatically; only
+    // the student's own confirm click (acknowledgeGraceWarning) clears it.
+    function onReturn() {
       if (graceInterval) {
         clearInterval(graceInterval);
         graceInterval = null;
+        setAwaitingGraceAck(true);
       }
-      setGraceCountdown(null);
     }
     function onVisibilityChange() {
       if (document.hidden) startGrace();
-      else cancelGrace();
+      else onReturn();
     }
 
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("blur", startGrace);
-    window.addEventListener("focus", cancelGrace);
+    window.addEventListener("focus", onReturn);
     return () => {
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("blur", startGrace);
-      window.removeEventListener("focus", cancelGrace);
-      cancelGrace();
+      window.removeEventListener("focus", onReturn);
+      if (graceInterval) clearInterval(graceInterval);
     };
-  }, [finishAttempt]);
+  }, [finishAttempt, awaitingGraceAck]);
+
+  function acknowledgeGraceWarning() {
+    setAwaitingGraceAck(false);
+    setGraceCountdown(null);
+  }
 
   // The on-screen modal can't be seen in a backgrounded tab, but the tab's
   // own title (in the tab strip/title bar) stays visible regardless of
   // focus — flash a countdown there too, so switching tabs isn't
   // completely silent even though nothing can pop up over the active tab.
+  // Once the student is back (awaiting acknowledgment), they're looking
+  // straight at the on-page modal, so the tab title reverts to normal.
   useEffect(() => {
-    document.title = graceCountdown !== null ? t("exam.tabWarning", { seconds: graceCountdown }) : originalTitleRef.current;
-  }, [graceCountdown, t]);
+    document.title =
+      graceCountdown !== null && !awaitingGraceAck ? t("exam.tabWarning", { seconds: graceCountdown }) : originalTitleRef.current;
+  }, [graceCountdown, awaitingGraceAck, t]);
 
   useEffect(() => {
     return () => {
@@ -235,10 +255,17 @@ export function ExamPage() {
 
       <p className="exam-leave-warning">{t("exam.leaveWarning")}</p>
 
-      {graceCountdown !== null && (
+      {(graceCountdown !== null || awaitingGraceAck) && (
         <div className="grace-overlay" role="alertdialog" aria-live="assertive">
           <div className="grace-modal">
-            <p>{t("exam.graceWarning", { seconds: graceCountdown })}</p>
+            <p>
+              {awaitingGraceAck ? t("exam.graceAckMessage") : t("exam.graceWarning", { seconds: graceCountdown })}
+            </p>
+            {awaitingGraceAck && (
+              <button className="primary" type="button" onClick={acknowledgeGraceWarning}>
+                {t("exam.graceAcknowledgeButton")}
+              </button>
+            )}
           </div>
         </div>
       )}
