@@ -41,11 +41,18 @@ export function CohortDetailPage() {
   const [openAt, setOpenAt] = useState(defaultOpenAt);
   const [closeAt, setCloseAt] = useState(defaultCloseAt);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [copiedJoinUrl, setCopiedJoinUrl] = useState(false);
 
   async function onCopyAccessCode(code: string) {
     await navigator.clipboard.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode((current) => (current === code ? null : current)), 1500);
+  }
+
+  async function onCopyJoinUrl() {
+    await navigator.clipboard.writeText(joinUrl);
+    setCopiedJoinUrl(true);
+    setTimeout(() => setCopiedJoinUrl(false), 1500);
   }
 
   async function load() {
@@ -252,7 +259,10 @@ export function CohortDetailPage() {
                 {t("assignments.joinUrl")}:{" "}
                 <a href={joinUrl} target="_blank" rel="noreferrer">
                   {joinUrl}
-                </a>
+                </a>{" "}
+                <button className="link" type="button" onClick={onCopyJoinUrl}>
+                  {copiedJoinUrl ? t("assignments.copied") : t("assignments.copyCode")}
+                </button>
               </div>
             </div>
             <button className="link danger" type="button" onClick={() => onDeleteAssignment(a)}>

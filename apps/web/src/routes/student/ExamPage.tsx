@@ -115,6 +115,22 @@ export function ExamPage() {
     };
   }, [finishAttempt]);
 
+  // Native "leave site?" confirmation for closing the tab, refreshing, or
+  // navigating away by URL — the one case where the browser can actually
+  // show a blocking popup before the page unloads. A tab/app switch (above)
+  // can't trigger this: the page already loses visibility before any
+  // dialog could render, which is why that case relies on the on-screen
+  // banner instead.
+  useEffect(() => {
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (endingRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
+
   function updateAnswer(questionId: string, selectedOptionIds: string[]) {
     setQuestions((prev) =>
       prev ? prev.map((q) => (q.id === questionId ? { ...q, selectedOptionIds } : q)) : prev,
@@ -161,6 +177,8 @@ export function ExamPage() {
           <Link to="/cohorts">{t("exam.teacherLink")}</Link>
         </div>
       )}
+
+      <p className="exam-leave-warning">{t("exam.leaveWarning")}</p>
 
       <div className="question-navigator">
         {questions.map((q, i) => (

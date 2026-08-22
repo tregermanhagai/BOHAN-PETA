@@ -15,10 +15,10 @@ import { QuestionForm } from "../../components/QuestionForm";
 // — new quizzes already get this saved at creation time; these fallbacks
 // only matter for quizzes created before that default existed.
 function defaultPassFeedback(language: string): string {
-  return language === "he" ? "עברת" : "You passed!";
+  return language === "he" ? "עברת את המבדק" : "You passed!";
 }
 function defaultFailFeedback(language: string): string {
-  return language === "he" ? "לא עברת את הבוחן" : "You did not pass the exam.";
+  return language === "he" ? "לא עברת את המבדק, עלייך לחזור על החומר" : "You did not pass the exam.";
 }
 
 export function QuizEditorPage() {
@@ -345,7 +345,7 @@ export function QuizEditorPage() {
           <div className="settings-grid">
             <div className="field">
               <label htmlFor="ai-questionCount">{t("ai.questionCount")}</label>
-              <input id="ai-questionCount" name="questionCount" type="number" min={3} max={20} defaultValue={5} required />
+              <input id="ai-questionCount" name="questionCount" type="number" min={3} max={100} defaultValue={5} required />
             </div>
             <div className="field">
               <label htmlFor="ai-optionsPerQuestion">{t("ai.optionsPerQuestion")}</label>

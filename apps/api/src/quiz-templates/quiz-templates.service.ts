@@ -63,7 +63,7 @@ function toQuestionResponse(row: QuestionWithOptions): QuestionResponse {
 /** Default pass/fail feedback text for newly created quizzes — teachers can freely edit or clear it afterward. */
 function defaultFeedback(language: string): { pass: string; fail: string } {
   if (language === "he") {
-    return { pass: "עברת", fail: "לא עברת את הבוחן" };
+    return { pass: "עברת את המבדק", fail: "לא עברת את המבדק, עלייך לחזור על החומר" };
   }
   return { pass: "You passed!", fail: "You did not pass the exam." };
 }

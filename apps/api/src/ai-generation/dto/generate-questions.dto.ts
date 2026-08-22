@@ -17,7 +17,7 @@ export class GenerateQuestionsDto implements GenerateQuestionsRequest {
   @Type(() => Number)
   @IsInt()
   @Min(3)
-  @Max(20)
+  @Max(100)
   questionCount!: number;
 
   @Type(() => Number)

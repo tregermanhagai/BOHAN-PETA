@@ -508,6 +508,17 @@ h1 {
   color: var(--ink-soft);
 }
 
+.exam-leave-warning {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding: 10px 14px;
+  margin-block-end: 12px;
+  border: 1px solid var(--crit);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--crit) 8%, transparent);
+  color: var(--crit);
+}
+
 .question-navigator {
   display: flex;
   flex-wrap: wrap;
