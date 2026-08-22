@@ -1,0 +1,14 @@
+# Cloudflare Pages picks this up from the build output root.
+# The service worker and the HTML shell must always be revalidated —
+# otherwise a stale cached copy can delay how quickly a new deploy's
+# code actually reaches a returning visitor's browser. Hashed asset
+# filenames under /assets/* are safe to cache long-term (unaffected by
+# this file) since a new build always gets new hashes.
+/sw.js
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache
