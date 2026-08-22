@@ -4,6 +4,7 @@ import type { AnswerOptionInput, QuestionResponse, QuestionType, UpsertQuestionR
 
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 6;
+const DEFAULT_OPEN_POINTS = 5;
 
 function emptyOptions(): AnswerOptionInput[] {
   return [
@@ -32,8 +33,10 @@ export function QuestionForm({
   const [text, setText] = useState(initial?.text ?? "");
   const [type, setType] = useState<QuestionType>(initial?.type ?? "single");
   const [options, setOptions] = useState<AnswerOptionInput[]>(
-    initial ? initial.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })) : emptyOptions(),
+    initial && initial.type !== "open" ? initial.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })) : emptyOptions(),
   );
+  const [referenceAnswer, setReferenceAnswer] = useState(initial?.referenceAnswer ?? "");
+  const [points, setPoints] = useState(initial?.type === "open" ? initial.points : DEFAULT_OPEN_POINTS);
   const [localError, setLocalError] = useState<string | null>(null);
 
   function setOptionText(index: number, value: string) {
@@ -74,6 +77,14 @@ export function QuestionForm({
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLocalError(null);
+    if (type === "open") {
+      if (!referenceAnswer.trim()) {
+        setLocalError(t("question.referenceAnswerRequired"));
+        return;
+      }
+      onSave({ text, type, options: [], referenceAnswer, points });
+      return;
+    }
     if (options.length < MIN_OPTIONS) {
       setLocalError(t("question.minOptions"));
       return;

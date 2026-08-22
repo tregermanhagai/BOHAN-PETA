@@ -31,6 +31,20 @@ export interface GenerateQuestionsParams {
   sourceFile?: SourceFile;
 }
 
+export interface GradeOpenAnswerItem {
+  questionId: string;
+  questionText: string;
+  referenceAnswer: string;
+  studentAnswer: string;
+  maxPoints: number;
+}
+
+export interface GradedOpenAnswer {
+  questionId: string;
+  earnedPoints: number;
+  feedback: string;
+}
+
 const DEFAULT_MODEL = "gemini-3.6-flash";
 const DOCX_MIMETYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 // Keeps prompt size (and cost) bounded — plenty for a source chapter/article;
@@ -126,6 +140,89 @@ export class GeminiService {
     }
 
     return parsed as DraftQuestion[];
+  }
+
+  /**
+   * Grades every open (free-text) question in one attempt with a single
+   * Gemini call (not one call per question) — cheaper and faster than a
+   * round trip per question. Callers must treat any thrown error as
+   * non-fatal to the attempt itself (grading must never block exam
+   * submission) — this method only throws, it never silently degrades.
+   */
+  async gradeOpenAnswers(items: GradeOpenAnswerItem[], language: string): Promise<GradedOpenAnswer[]> {
+    if (!this.client) {
+      throw new ServiceUnavailableException("AI grading is not configured");
+    }
+    if (items.length === 0) return [];
+
+    const schema = {
+      type: "array",
+      minItems: items.length,
+      maxItems: items.length,
+      items: {
+        type: "object",
+        properties: {
+          questionId: { type: "string" },
+          earnedPoints: { type: "number" },
+          feedback: { type: "string" },
+        },
+        required: ["questionId", "earnedPoints", "feedback"],
+      },
+    };
+
+    const prompt = [
+      "You are grading a student's free-text exam answers against a teacher-provided reference answer.",
+      `Write the "feedback" field in this language: ${language}.`,
+      "For each question, award a number of points between 0 and its maxPoints based on how correct and complete the student's answer is relative to the reference answer — partial credit is expected and encouraged, not just all-or-nothing.",
+      "Return only the JSON array described by the schema, nothing else, with one entry per question in the same order given, each keyed by its questionId.",
+      "",
+      JSON.stringify(
+        items.map((i) => ({
+          questionId: i.questionId,
+          question: i.questionText,
+          referenceAnswer: i.referenceAnswer,
+          maxPoints: i.maxPoints,
+          studentAnswer: i.studentAnswer,
+        })),
+      ),
+    ].join("\n");
+
+    let raw: string;
+    try {
+      const response = await this.client.models.generateContent({
+        model: this.model,
+        contents: [prompt],
+        config: {
+          responseMimeType: "application/json",
+          responseJsonSchema: schema,
+        },
+      });
+      raw = response.text ?? "";
+    } catch (err) {
+      const message = (err as Error).message;
+      this.logger.error(`Gemini grading request failed: ${message}`);
+      throw new ServiceUnavailableException("AI grading request failed");
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new ServiceUnavailableException("AI grading returned an unreadable response");
+    }
+    if (!Array.isArray(parsed)) {
+      throw new ServiceUnavailableException("AI grading returned an unexpected response shape");
+    }
+
+    const maxPointsById = new Map(items.map((i) => [i.questionId, i.maxPoints]));
+    return (parsed as GradedOpenAnswer[])
+      .filter((g) => maxPointsById.has(g.questionId))
+      .map((g) => {
+        const maxPoints = maxPointsById.get(g.questionId)!;
+        // Defensive clamp/round — don't trust the model's arithmetic.
+        const earnedPoints = Math.max(0, Math.min(maxPoints, Math.round((Number(g.earnedPoints) || 0) * 100) / 100));
+        return { questionId: g.questionId, earnedPoints, feedback: String(g.feedback ?? "") };
+      });
   }
 
   /**

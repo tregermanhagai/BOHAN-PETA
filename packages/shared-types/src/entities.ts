@@ -6,7 +6,7 @@
 
 export type QuizDifficulty = "easy" | "medium" | "hard";
 export type QuizStatus = "draft" | "published";
-export type QuestionType = "single" | "multi";
+export type QuestionType = "single" | "multi" | "open";
 export type QuizSourceType = "url" | "file";
 export type AttemptEndedReason = "submitted" | "focus_loss" | "time_expired";
 
@@ -63,6 +63,10 @@ export interface Question {
   imageUrl: string | null;
   imagePrompt: string | null;
   sortOrder: number | null;
+  /** Always 1 for single/multi (not editable); teacher-set for "open" (default 5). */
+  points: number;
+  /** Only populated for "open" questions — the model answer the AI grades against. */
+  referenceAnswer: string | null;
   options: AnswerOption[];
 }
 
@@ -101,4 +105,7 @@ export interface AttemptAnswer {
   attemptId: string;
   questionId: string;
   selectedOptionIds: string[];
+  answerText: string | null;
+  aiScore: number | null;
+  aiFeedback: string | null;
 }

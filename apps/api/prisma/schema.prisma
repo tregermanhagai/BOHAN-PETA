@@ -105,6 +105,7 @@ model QuizSource {
 enum QuestionType {
   single
   multi
+  open
 
   @@map("question_type")
 }
@@ -121,6 +122,14 @@ model Question {
   imageUrl       String?      @map("image_url")
   imagePrompt    String?      @map("image_prompt")
   sortOrder      Int?         @map("sort_order")
+  // Every question is worth this many points — always 1 for single/multi
+  // (not exposed in the UI), teacher-editable for "open" (default 5).
+  // Generalizes what used to be an implicit uniform 1-point-per-question
+  // score formula.
+  points         Int          @default(1)
+  // Only populated/used for "open" questions — the model answer the AI
+  // grades a student's free-text response against.
+  referenceAnswer String?     @map("reference_answer")
 
   options        AnswerOption[]
   attemptAnswers AttemptAnswer[]
@@ -220,6 +229,14 @@ model AttemptAnswer {
   questionId         String   @map("question_id")
   question           Question @relation(fields: [questionId], references: [id])
   selectedOptionIds  String[] @map("selected_option_ids")
+  // Free-text response for an "open" question — null for single/multi.
+  answerText         String?  @map("answer_text")
+  // AI-graded points earned (0..question.points) for an "open" question —
+  // null until graded (or if grading never ran, e.g. AI unconfigured).
+  aiScore            Decimal? @map("ai_score") @db.Decimal(5, 2)
+  // Only ever shown to the student when the quiz's reveal_answer_key is
+  // on — same gating as AnswerOption.isCorrect.
+  aiFeedback         String?  @map("ai_feedback")
 
   // Lets answer-saving be a plain upsert keyed on (attempt, question)
   // rather than "find existing row, then update or create".

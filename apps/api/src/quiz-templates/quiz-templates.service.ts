@@ -51,6 +51,8 @@ function toQuestionResponse(row: QuestionWithOptions): QuestionResponse {
     imageUrl: row.imageUrl,
     imagePrompt: row.imagePrompt,
     sortOrder: row.sortOrder,
+    points: row.points,
+    referenceAnswer: row.referenceAnswer,
     options: row.options.map((o) => ({
       id: o.id,
       questionId: o.questionId,
@@ -78,12 +80,42 @@ function validateOptionCorrectness(type: "single" | "multi", options: { isCorrec
   }
 }
 
+/**
+ * Branches authoring validation by question type — single/multi need a
+ * valid correct-option configuration (checked above), "open" instead
+ * needs a non-empty reference answer and a positive point value. Called
+ * from addQuestion/updateQuestion and again at publish time so a
+ * manually-blanked reference answer can't sneak into a published quiz.
+ */
+function validateQuestionPayload(dto: {
+  type: string;
+  options: { isCorrect: boolean }[];
+  referenceAnswer?: string | null;
+  points?: number | null;
+}) {
+  if (dto.type === "open") {
+    if (!dto.referenceAnswer || dto.referenceAnswer.trim().length === 0) {
+      throw new BadRequestException("An open question needs a reference answer");
+    }
+    if (!dto.points || dto.points < 1) {
+      throw new BadRequestException("An open question needs a point value of at least 1");
+    }
+    return;
+  }
+  validateOptionCorrectness(dto.type as "single" | "multi", dto.options);
+}
+
 @Injectable()
 export class QuizTemplatesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(teacherId: string, dto: CreateQuizTemplateDto): Promise<QuizTemplateResponse> {
-    const language = dto.language ?? "en";
+    // The quiz-creation form never sends a language (see QuizzesPage.tsx),
+    // and this app is Hebrew-first throughout (default RTL, default UI
+    // language) — defaulting to English here left every new quiz with
+    // English pass/fail feedback text unless a teacher happened to notice
+    // and change the language setting afterward.
+    const language = dto.language ?? "he";
     const feedback = defaultFeedback(language);
     const row = await this.prisma.quizTemplate.create({
       data: {
@@ -168,7 +200,7 @@ export class QuizTemplatesService {
         );
       }
       for (const q of active) {
-        validateOptionCorrectness(q.type, q.options);
+        validateQuestionPayload(q);
       }
     }
 
@@ -182,7 +214,7 @@ export class QuizTemplatesService {
     dto: UpsertQuestionDto,
   ): Promise<QuestionResponse> {
     await this.getOwnedTemplateOrThrow(teacherId, quizTemplateId);
-    validateOptionCorrectness(dto.type, dto.options);
+    validateQuestionPayload(dto);
 
     const last = await this.prisma.question.findFirst({
       where: { quizTemplateId },
@@ -191,13 +223,18 @@ export class QuizTemplatesService {
     });
     const sortOrder = (last?.sortOrder ?? -1) + 1;
 
+    // Single/multi are always worth 1 point (not editable via this path)
+    // — only "open" questions carry a teacher-set point value.
+    const isOpen = dto.type === "open";
     const row = await this.prisma.question.create({
       data: {
         quizTemplateId,
         text: dto.text,
         type: dto.type,
         sortOrder,
-        options: { create: dto.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })) },
+        points: isOpen ? dto.points! : 1,
+        referenceAnswer: isOpen ? dto.referenceAnswer : null,
+        options: isOpen ? undefined : { create: dto.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })) },
       },
       include: { options: true },
     });
@@ -212,8 +249,9 @@ export class QuizTemplatesService {
   ): Promise<QuestionResponse> {
     await this.getOwnedTemplateOrThrow(teacherId, quizTemplateId);
     await this.getOwnedQuestionOrThrow(quizTemplateId, questionId);
-    validateOptionCorrectness(dto.type, dto.options);
+    validateQuestionPayload(dto);
 
+    const isOpen = dto.type === "open";
     const row = await this.prisma.$transaction(async (tx) => {
       await tx.answerOption.deleteMany({ where: { questionId } });
       return tx.question.update({
@@ -221,7 +259,9 @@ export class QuizTemplatesService {
         data: {
           text: dto.text,
           type: dto.type,
-          options: { create: dto.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })) },
+          points: isOpen ? dto.points! : 1,
+          referenceAnswer: isOpen ? dto.referenceAnswer : null,
+          options: isOpen ? undefined : { create: dto.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })) },
         },
         include: { options: true },
       });

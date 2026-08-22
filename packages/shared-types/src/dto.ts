@@ -89,7 +89,12 @@ export interface AnswerOptionInput {
 export interface UpsertQuestionRequest {
   text: string;
   type: QuestionType;
+  /** Ignored/empty for "open" questions. */
   options: AnswerOptionInput[];
+  /** Required for "open" questions — the model answer the AI grades against. */
+  referenceAnswer?: string;
+  /** "open" questions only; teacher-set point value (default 5 client-side). Forced to 1 server-side for single/multi. */
+  points?: number;
 }
 
 export type QuestionResponse = Question & { options: AnswerOption[] };
@@ -98,8 +103,15 @@ export type QuestionResponse = Question & { options: AnswerOption[] };
 // AI-assisted generation (F-10–F-12, PRD section 6)
 // ---------------------------------------------------------------
 
-/** "mixed" lets Gemini choose single vs. multi per question; the other two force every generated question to that type. */
-export type GenerateQuestionsQuestionType = QuestionType | "mixed";
+/**
+ * "mixed" lets Gemini choose single vs. multi per question; the other two
+ * force every generated question to that type. Deliberately NOT derived
+ * from the general QuestionType (which also includes "open") — AI
+ * generation only ever produces single/multi questions; open questions
+ * are authored by hand with a teacher-written reference answer, AI's role
+ * there is grading a student's answer, not generating the question.
+ */
+export type GenerateQuestionsQuestionType = "single" | "multi" | "mixed";
 
 export interface GenerateQuestionsRequest {
   /**
@@ -170,6 +182,9 @@ export interface AttemptQuestionView {
   options: AttemptOptionView[];
   /** Already-saved answer, if any — powers resume (F-05). */
   selectedOptionIds: string[];
+  /** Already-saved free-text answer, if any (open questions only) — powers resume. */
+  answerText: string | null;
+  points: number;
 }
 
 export interface AttemptQuestionsResponse {
@@ -184,6 +199,8 @@ export interface AttemptQuestionsResponse {
 
 export interface SaveAnswerRequest {
   selectedOptionIds: string[];
+  /** Open questions only. */
+  answerText?: string;
 }
 
 export interface AttemptResultResponse {
@@ -208,6 +225,13 @@ export interface AttemptReviewQuestion {
   type: QuestionType;
   options: AttemptReviewOption[];
   selectedOptionIds: string[];
+  /** Open questions only. */
+  answerText: string | null;
+  points: number;
+  /** Points actually earned — equals `points` or 0 for single/multi (binary), 0..points for open (AI-graded). */
+  pointsEarned: number;
+  /** Only present when the quiz's reveal_answer_key is on (open questions only, F-07b-equivalent). */
+  aiFeedback?: string | null;
   correct: boolean;
 }
 

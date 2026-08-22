@@ -16,7 +16,7 @@ export class AttemptsController {
 
   @Put(":id/answers/:questionId")
   saveAnswer(@Param("id") id: string, @Param("questionId") questionId: string, @Body() dto: SaveAnswerDto) {
-    return this.attempts.saveAnswer(id, questionId, dto.selectedOptionIds);
+    return this.attempts.saveAnswer(id, questionId, dto.selectedOptionIds, dto.answerText);
   }
 
   @Post(":id/submit")

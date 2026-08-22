@@ -2,11 +2,11 @@ import { Module } from "@nestjs/common";
 import { QuizTemplatesModule } from "../quiz-templates/quiz-templates.module";
 import { AiGenerationController } from "./ai-generation.controller";
 import { AiGenerationService } from "./ai-generation.service";
-import { GeminiService } from "./gemini.service";
+import { GeminiModule } from "./gemini.module";
 
 @Module({
-  imports: [QuizTemplatesModule],
+  imports: [QuizTemplatesModule, GeminiModule],
   controllers: [AiGenerationController],
-  providers: [AiGenerationService, GeminiService],
+  providers: [AiGenerationService],
 })
 export class AiGenerationModule {}
