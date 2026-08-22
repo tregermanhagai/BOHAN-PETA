@@ -158,6 +158,7 @@ model QuizAssignment {
   closeAt        DateTime?    @map("close_at")
   maxAttempts    Int          @default(1) @map("max_attempts")
   shuffle        Boolean      @default(true)
+  createdAt      DateTime     @default(now()) @map("created_at")
 
   attempts Attempt[]
 

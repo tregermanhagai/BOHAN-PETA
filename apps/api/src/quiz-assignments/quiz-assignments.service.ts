@@ -65,7 +65,9 @@ export class QuizAssignmentsService {
     await this.getOwnedCohortOrThrow(teacherId, cohortId);
     const rows = await this.prisma.quizAssignment.findMany({
       where: { cohortId },
-      orderBy: { id: "desc" },
+      // id is a random UUID, not time-ordered -- createdAt is what
+      // actually reflects creation order (newest assignment first).
+      orderBy: { createdAt: "desc" },
       include: { quizTemplate: { select: { title: true } } },
     });
     return rows.map((row) => toResponse(row, row.quizTemplate.title));

@@ -134,6 +134,21 @@ test.describe("GET /cohorts/:cohortId/assignments", () => {
     const res = await authedRequest.get(`/cohorts/${cohort.id}/assignments`);
     expect(await res.json()).toEqual([]);
   });
+
+  test("lists newest-created assignment first", async ({ authedRequest }) => {
+    const cohort = await createCohort(authedRequest);
+    const quiz = await createPublishedQuiz(authedRequest);
+    const first = await (
+      await authedRequest.post(`/cohorts/${cohort.id}/assignments`, { data: { quizTemplateId: quiz.id } })
+    ).json();
+    const second = await (
+      await authedRequest.post(`/cohorts/${cohort.id}/assignments`, { data: { quizTemplateId: quiz.id } })
+    ).json();
+
+    const res = await authedRequest.get(`/cohorts/${cohort.id}/assignments`);
+    const list = await res.json();
+    expect(list.map((a: { id: string }) => a.id)).toEqual([second.id, first.id]);
+  });
 });
 
 test.describe("DELETE /cohorts/:cohortId/assignments/:id", () => {
