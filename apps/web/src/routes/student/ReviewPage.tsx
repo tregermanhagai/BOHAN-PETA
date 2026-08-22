@@ -36,28 +36,46 @@ export function ReviewPage() {
       {review.questions.map((q, i) => (
         <div className={`review-question ${q.correct ? "correct" : "incorrect"}`} key={q.id}>
           <span className={`review-status ${q.correct ? "correct" : "incorrect"}`}>
-            {i + 1}. {q.correct ? t("review.correct") : t("review.incorrect")}
+            {i + 1}.{" "}
+            {q.type === "open"
+              ? t("review.pointsEarned", { earned: q.pointsEarned, points: q.points })
+              : q.correct
+                ? t("review.correct")
+                : t("review.incorrect")}
           </span>
           <div className="question-text" dir="auto">
             {q.text}
           </div>
-          <ul className="option-list">
-            {q.options.map((opt) => {
-              const selected = q.selectedOptionIds.includes(opt.id);
-              const showCorrect = opt.isCorrect !== undefined;
-              return (
-                <li
-                  key={opt.id}
-                  className={`review-option ${selected ? "selected" : ""} ${showCorrect && opt.isCorrect ? "correct-answer" : ""}`}
-                  dir="auto"
-                >
-                  {selected ? "☑" : "☐"} {opt.text}
-                  {selected && ` — ${t("review.yourAnswer")}`}
-                  {showCorrect && opt.isCorrect && !selected && ` — ${t("review.correctAnswer")}`}
-                </li>
-              );
-            })}
-          </ul>
+          {q.type === "open" ? (
+            <div className="review-open-answer">
+              <div className="muted">{t("review.yourAnswer")}</div>
+              <p dir="auto">{q.answerText || "—"}</p>
+              {q.aiFeedback != null && (
+                <>
+                  <div className="muted">{t("review.aiFeedback")}</div>
+                  <p dir="auto">{q.aiFeedback}</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <ul className="option-list">
+              {q.options.map((opt) => {
+                const selected = q.selectedOptionIds.includes(opt.id);
+                const showCorrect = opt.isCorrect !== undefined;
+                return (
+                  <li
+                    key={opt.id}
+                    className={`review-option ${selected ? "selected" : ""} ${showCorrect && opt.isCorrect ? "correct-answer" : ""}`}
+                    dir="auto"
+                  >
+                    {selected ? "☑" : "☐"} {opt.text}
+                    {selected && ` — ${t("review.yourAnswer")}`}
+                    {showCorrect && opt.isCorrect && !selected && ` — ${t("review.correctAnswer")}`}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       ))}
     </div>

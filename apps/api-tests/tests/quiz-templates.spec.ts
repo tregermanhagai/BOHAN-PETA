@@ -230,6 +230,65 @@ test.describe("Question authoring (F-11/F-13/F-14)", () => {
   });
 });
 
+test.describe("Open question authoring", () => {
+  test("creates an open question without options", async ({ authedRequest }) => {
+    const quiz = await createDraftQuiz(authedRequest);
+    const res = await authedRequest.post(`/quiz-templates/${quiz.id}/questions`, {
+      data: {
+        text: "Explain the water cycle.",
+        type: "open",
+        options: [],
+        referenceAnswer: "Evaporation, condensation, precipitation, collection.",
+        points: 5,
+      },
+    });
+    expect(res.status()).toBe(201);
+    const body = await res.json();
+    expect(body.options).toHaveLength(0);
+    expect(body.referenceAnswer).toBe("Evaporation, condensation, precipitation, collection.");
+    expect(body.points).toBe(5);
+  });
+
+  test("rejects an open question missing a reference answer", async ({ authedRequest }) => {
+    const quiz = await createDraftQuiz(authedRequest);
+    const res = await authedRequest.post(`/quiz-templates/${quiz.id}/questions`, {
+      data: { text: "Bad", type: "open", options: [], points: 5 },
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test("rejects an open question with fewer than 1 point", async ({ authedRequest }) => {
+    const quiz = await createDraftQuiz(authedRequest);
+    const res = await authedRequest.post(`/quiz-templates/${quiz.id}/questions`, {
+      data: { text: "Bad", type: "open", options: [], referenceAnswer: "Something", points: 0 },
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test("single/multi questions are always worth 1 point regardless of what's sent", async ({ authedRequest }) => {
+    const quiz = await createDraftQuiz(authedRequest);
+    const question = await addQuestion(authedRequest, quiz.id, { points: 99 });
+    expect(question.points).toBe(1);
+  });
+
+  test("publishes a quiz mixing open and choice questions", async ({ authedRequest }) => {
+    const quiz = await createDraftQuiz(authedRequest);
+    await addQuestion(authedRequest, quiz.id);
+    await addQuestion(authedRequest, quiz.id, { text: "Question 2?" });
+    await addQuestion(authedRequest, quiz.id, {
+      text: "Explain photosynthesis.",
+      type: "open",
+      options: [],
+      referenceAnswer: "Plants convert light into energy.",
+      points: 5,
+    });
+
+    const res = await authedRequest.patch(`/quiz-templates/${quiz.id}/status`, { data: { status: "published" } });
+    expect(res.status()).toBe(200);
+    expect((await res.json()).status).toBe("published");
+  });
+});
+
 test.describe("PATCH /quiz-templates/:id/status — Edit <-> Execution (3.4)", () => {
   test("refuses to publish with fewer than 3 questions", async ({ authedRequest }) => {
     const quiz = await createDraftQuiz(authedRequest);

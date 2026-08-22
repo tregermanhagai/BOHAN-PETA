@@ -350,6 +350,126 @@ test.describe("POST /attempts/:id/submit — scoring (F-13a)", () => {
   });
 });
 
+test.describe("Open questions (AI grading)", () => {
+  /**
+   * The whole Playwright suite runs with GEMINI_API_KEY="" (see
+   * playwright.config.ts), so GeminiService is always unconfigured here —
+   * grading deterministically fails and falls back to 0 points for every
+   * open question, per attempts.service.ts's gradeOpenQuestions. This is
+   * a real, reproducible test of that fallback path, not a mock.
+   */
+  test("an answered open question scores 0 (AI unconfigured) without blocking submission", async ({
+    authedRequest,
+    request,
+  }) => {
+    const quiz = await (await authedRequest.post("/quiz-templates", { data: { title: "Open Q Quiz" } })).json();
+    const q1 = await (
+      await authedRequest.post(`/quiz-templates/${quiz.id}/questions`, {
+        data: {
+          text: "Q1",
+          type: "single",
+          options: [
+            { text: "A", isCorrect: true },
+            { text: "B", isCorrect: false },
+          ],
+        },
+      })
+    ).json();
+    const q2 = await (
+      await authedRequest.post(`/quiz-templates/${quiz.id}/questions`, {
+        data: {
+          text: "Q2",
+          type: "single",
+          options: [
+            { text: "A", isCorrect: true },
+            { text: "B", isCorrect: false },
+          ],
+        },
+      })
+    ).json();
+    const q3 = await (
+      await authedRequest.post(`/quiz-templates/${quiz.id}/questions`, {
+        data: {
+          text: "Explain photosynthesis.",
+          type: "open",
+          options: [],
+          referenceAnswer: "Plants convert light into energy.",
+          points: 5,
+        },
+      })
+    ).json();
+    await authedRequest.patch(`/quiz-templates/${quiz.id}/status`, { data: { status: "published" } });
+
+    const cohort = await (await authedRequest.post("/cohorts", { data: { name: "Open Q Cohort" } })).json();
+    const assignment = await (
+      await authedRequest.post(`/cohorts/${cohort.id}/assignments`, { data: { quizTemplateId: quiz.id } })
+    ).json();
+    const { attemptId } = await joinAttempt(request, { accessCode: assignment.accessCode });
+
+    // Both single-choice answered correctly (1 point each); the open
+    // question is answered but can only be AI-graded, which is
+    // unavailable in this test environment.
+    const q1Correct = q1.options.find((o: { isCorrect: boolean }) => o.isCorrect).id;
+    const q2Correct = q2.options.find((o: { isCorrect: boolean }) => o.isCorrect).id;
+    await request.put(`/attempts/${attemptId}/answers/${q1.id}`, { data: { selectedOptionIds: [q1Correct] } });
+    await request.put(`/attempts/${attemptId}/answers/${q2.id}`, { data: { selectedOptionIds: [q2Correct] } });
+    await request.put(`/attempts/${attemptId}/answers/${q3.id}`, {
+      data: { selectedOptionIds: [], answerText: "Photosynthesis converts sunlight into chemical energy." },
+    });
+
+    const res = await request.post(`/attempts/${attemptId}/submit`);
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    // 2 points earned (both single-choice) out of 1+1+5=7 total.
+    expect(body.score).toBeCloseTo((2 / 7) * 100, 1);
+
+    const review = await (await request.get(`/attempts/${attemptId}/review`)).json();
+    const openReview = review.questions.find((q: { id: string }) => q.id === q3.id);
+    expect(openReview.answerText).toBe("Photosynthesis converts sunlight into chemical energy.");
+    expect(openReview.points).toBe(5);
+    expect(openReview.pointsEarned).toBe(0);
+  });
+
+  test("an unanswered open question doesn't call the AI and scores 0", async ({ authedRequest, request }) => {
+    const quiz = await (await authedRequest.post("/quiz-templates", { data: { title: "Open Q Quiz 2" } })).json();
+    await authedRequest.post(`/quiz-templates/${quiz.id}/questions`, {
+      data: {
+        text: "Q1",
+        type: "single",
+        options: [
+          { text: "A", isCorrect: true },
+          { text: "B", isCorrect: false },
+        ],
+      },
+    });
+    await authedRequest.post(`/quiz-templates/${quiz.id}/questions`, {
+      data: {
+        text: "Q2",
+        type: "single",
+        options: [
+          { text: "A", isCorrect: true },
+          { text: "B", isCorrect: false },
+        ],
+      },
+    });
+    await authedRequest.post(`/quiz-templates/${quiz.id}/questions`, {
+      data: { text: "Unanswered open", type: "open", options: [], referenceAnswer: "Anything", points: 5 },
+    });
+    await authedRequest.patch(`/quiz-templates/${quiz.id}/status`, { data: { status: "published" } });
+
+    const cohort = await (await authedRequest.post("/cohorts", { data: { name: "Open Q Cohort 2" } })).json();
+    const assignment = await (
+      await authedRequest.post(`/cohorts/${cohort.id}/assignments`, { data: { quizTemplateId: quiz.id } })
+    ).json();
+    const { attemptId } = await joinAttempt(request, { accessCode: assignment.accessCode });
+
+    const res = await request.post(`/attempts/${attemptId}/submit`);
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.score).toBe(0);
+  });
+});
+
 test.describe("POST /attempts/:id/auto-submit", () => {
   test("ends the attempt with endedReason=focus_loss", async ({ authedRequest, request }) => {
     const { assignment } = await setUpExamReadyQuiz(authedRequest);

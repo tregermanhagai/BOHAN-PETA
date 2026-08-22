@@ -110,42 +110,69 @@ export function QuestionForm({
         <select id="q-type" value={type} onChange={(e) => changeType(e.target.value as QuestionType)}>
           <option value="single">{t("question.type.single")}</option>
           <option value="multi">{t("question.type.multi")}</option>
+          <option value="open">{t("question.type.open")}</option>
         </select>
       </div>
 
-      <div className="field">
-        <label>{t("question.options")}</label>
-        {options.map((opt, i) => (
-          <div className="option-row" key={i}>
-            <input
-              type={type === "single" ? "radio" : "checkbox"}
-              name="correct-option"
-              checked={opt.isCorrect}
-              onChange={() => toggleCorrect(i)}
-              aria-label={t("question.correct")}
-            />
-            <input
-              type="text"
+      {type === "open" ? (
+        <>
+          <div className="field">
+            <label htmlFor="q-reference-answer">{t("question.referenceAnswer")}</label>
+            <textarea
+              id="q-reference-answer"
               dir="auto"
-              required
-              placeholder={t("question.optionText")}
-              value={opt.text}
-              onChange={(e) => setOptionText(i, e.target.value)}
+              value={referenceAnswer}
+              onChange={(e) => setReferenceAnswer(e.target.value)}
             />
-            <button
-              type="button"
-              className="link danger"
-              onClick={() => removeOption(i)}
-              disabled={options.length <= MIN_OPTIONS}
-            >
-              {t("question.removeOption")}
-            </button>
+            <span className="muted">{t("question.referenceAnswerHint")}</span>
           </div>
-        ))}
-        <button type="button" className="secondary" onClick={addOption} disabled={options.length >= MAX_OPTIONS}>
-          {t("question.addOption")}
-        </button>
-      </div>
+          <div className="field">
+            <label htmlFor="q-points">{t("question.points")}</label>
+            <input
+              id="q-points"
+              type="number"
+              min={1}
+              max={20}
+              value={points}
+              onChange={(e) => setPoints(Number(e.target.value))}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="field">
+          <label>{t("question.options")}</label>
+          {options.map((opt, i) => (
+            <div className="option-row" key={i}>
+              <input
+                type={type === "single" ? "radio" : "checkbox"}
+                name="correct-option"
+                checked={opt.isCorrect}
+                onChange={() => toggleCorrect(i)}
+                aria-label={t("question.correct")}
+              />
+              <input
+                type="text"
+                dir="auto"
+                required
+                placeholder={t("question.optionText")}
+                value={opt.text}
+                onChange={(e) => setOptionText(i, e.target.value)}
+              />
+              <button
+                type="button"
+                className="link danger"
+                onClick={() => removeOption(i)}
+                disabled={options.length <= MIN_OPTIONS}
+              >
+                {t("question.removeOption")}
+              </button>
+            </div>
+          ))}
+          <button type="button" className="secondary" onClick={addOption} disabled={options.length >= MAX_OPTIONS}>
+            {t("question.addOption")}
+          </button>
+        </div>
+      )}
 
       <div className="form-actions">
         <button className="primary" type="submit" disabled={saving}>

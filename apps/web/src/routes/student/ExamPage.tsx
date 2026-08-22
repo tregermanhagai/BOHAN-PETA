@@ -152,6 +152,23 @@ export function ExamPage() {
     }
   }
 
+  // Keystrokes only update local state (instant, no network); the actual
+  // save fires on blur, matching how option selections save immediately
+  // but without spamming a request per character typed.
+  function onTextAnswerChange(questionId: string, answerText: string) {
+    setQuestions((prev) => (prev ? prev.map((q) => (q.id === questionId ? { ...q, answerText } : q)) : prev));
+  }
+
+  function onTextAnswerBlur(question: AttemptQuestionView) {
+    api
+      .put(`/attempts/${id}/answers/${question.id}`, { selectedOptionIds: [], answerText: question.answerText ?? "" }, { auth: false })
+      .catch((err) => setError(translateApiError(err, t)));
+  }
+
+  function isAnswered(q: AttemptQuestionView): boolean {
+    return q.type === "open" ? Boolean(q.answerText?.trim()) : q.selectedOptionIds.length > 0;
+  }
+
   function onSubmitClick() {
     if (confirm(t("exam.submitConfirm"))) finishAttempt("submit");
   }
@@ -185,7 +202,7 @@ export function ExamPage() {
           <button
             key={q.id}
             type="button"
-            className={`nav-dot ${i === currentIndex ? "current" : ""} ${q.selectedOptionIds.length > 0 ? "answered" : ""}`}
+            className={`nav-dot ${i === currentIndex ? "current" : ""} ${isAnswered(q) ? "answered" : ""}`}
             onClick={() => setCurrentIndex(i)}
           >
             {i + 1}
@@ -199,28 +216,44 @@ export function ExamPage() {
         <div className="question-text" dir="auto">
           {question.text}
         </div>
-        <p className="muted">{question.type === "single" ? t("exam.selectOne") : t("exam.selectMultiple")}</p>
-        <ul className="answer-choice-list">
-          {question.options.map((opt) => {
-            const checked = question.selectedOptionIds.includes(opt.id);
-            return (
-              <li key={opt.id}>
-                <label className="answer-choice">
-                  <input
-                    type={question.type === "single" ? "radio" : "checkbox"}
-                    name={`q-${question.id}`}
-                    checked={checked}
-                    onChange={() => toggleOption(question, opt.id)}
-                  />
-                  <span className="answer-choice-text" dir="auto">
-                    {opt.text}
-                  </span>
-                </label>
-              </li>
-            );
-          })}
-        </ul>
-        {question.selectedOptionIds.length === 0 && <p className="muted">{t("exam.unanswered")}</p>}
+        {question.type === "open" ? (
+          <>
+            <p className="muted">{t("exam.typeYourAnswer", { points: question.points })}</p>
+            <textarea
+              className="exam-text-answer"
+              dir="auto"
+              value={question.answerText ?? ""}
+              onChange={(e) => onTextAnswerChange(question.id, e.target.value)}
+              onBlur={() => onTextAnswerBlur(question)}
+            />
+            {!isAnswered(question) && <p className="muted">{t("exam.unanswered")}</p>}
+          </>
+        ) : (
+          <>
+            <p className="muted">{question.type === "single" ? t("exam.selectOne") : t("exam.selectMultiple")}</p>
+            <ul className="answer-choice-list">
+              {question.options.map((opt) => {
+                const checked = question.selectedOptionIds.includes(opt.id);
+                return (
+                  <li key={opt.id}>
+                    <label className="answer-choice">
+                      <input
+                        type={question.type === "single" ? "radio" : "checkbox"}
+                        name={`q-${question.id}`}
+                        checked={checked}
+                        onChange={() => toggleOption(question, opt.id)}
+                      />
+                      <span className="answer-choice-text" dir="auto">
+                        {opt.text}
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+            {!isAnswered(question) && <p className="muted">{t("exam.unanswered")}</p>}
+          </>
+        )}
       </div>
 
       <div className="form-actions">

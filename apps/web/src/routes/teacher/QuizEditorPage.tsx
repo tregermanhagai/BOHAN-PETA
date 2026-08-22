@@ -411,13 +411,22 @@ export function QuizEditorPage() {
                   </button>
                 </div>
               </div>
-              <ul className="option-list">
-                {q.options.map((o) => (
-                  <li className={o.isCorrect ? "correct" : ""} key={o.id} dir="auto">
-                    {o.isCorrect ? "✓" : "—"} {o.text}
-                  </li>
-                ))}
-              </ul>
+              {q.type === "open" ? (
+                <div className="open-question-summary">
+                  <div className="muted">
+                    {t("question.points")}: {q.points}
+                  </div>
+                  <div dir="auto">{q.referenceAnswer}</div>
+                </div>
+              ) : (
+                <ul className="option-list">
+                  {q.options.map((o) => (
+                    <li className={o.isCorrect ? "correct" : ""} key={o.id} dir="auto">
+                      {o.isCorrect ? "✓" : "—"} {o.text}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           ),
         )}

@@ -104,6 +104,7 @@
   "question.type": "סוג",
   "question.type.single": "בחירה יחידה",
   "question.type.multi": "בחירה מרובה",
+  "question.type.open": "שאלה פתוחה",
   "question.options": "אפשרויות תשובה",
   "question.optionText": "טקסט האפשרות",
   "question.correct": "נכונה",
@@ -112,6 +113,10 @@
   "question.deleteConfirm": "למחוק את השאלה?",
   "question.minOptions": "נדרשות לפחות 2 אפשרויות.",
   "question.maxOptions": "מותר עד 6 אפשרויות.",
+  "question.referenceAnswer": "תשובת ייחוס",
+  "question.referenceAnswerHint": "התשובה המצופה — הבינה המלאכותית תשווה אליה את תשובת התלמיד ותעניק ניקוד יחסי.",
+  "question.referenceAnswerRequired": "נדרשת תשובת ייחוס עבור שאלה פתוחה.",
+  "question.points": "ניקוד",
 
   "assignments.title": "הקצאות",
   "assignments.empty": "למחזור הזה אין עדיין הקצאות בוחן.",
@@ -161,6 +166,7 @@
   "exam.unanswered": "טרם נענתה",
   "exam.selectOne": "בחרו תשובה אחת",
   "exam.selectMultiple": "בחרו את כל התשובות המתאימות",
+  "exam.typeYourAnswer": "הקלידו את תשובתכם ({{points}} נקודות)",
   "exam.loading": "טוען את הבוחן שלכם…",
 
   "result.title": "תוצאה",
@@ -178,6 +184,8 @@
   "review.incorrect": "לא נכון",
   "review.yourAnswer": "התשובה שלכם",
   "review.correctAnswer": "התשובה הנכונה",
+  "review.pointsEarned": "{{earned}} / {{points}} נקודות",
+  "review.aiFeedback": "משוב הבינה המלאכותית",
 
   "scores.title": "ציונים",
   "scores.backToCohort": "← חזרה למחזור",

@@ -104,6 +104,7 @@
   "question.type": "Type",
   "question.type.single": "Single choice",
   "question.type.multi": "Multiple select",
+  "question.type.open": "Open question",
   "question.options": "Answer options",
   "question.optionText": "Option text",
   "question.correct": "Correct",
@@ -112,6 +113,10 @@
   "question.deleteConfirm": "Delete this question?",
   "question.minOptions": "At least 2 options are required.",
   "question.maxOptions": "At most 6 options are allowed.",
+  "question.referenceAnswer": "Reference answer",
+  "question.referenceAnswerHint": "The expected answer — the AI compares the student's answer against this and awards proportional credit.",
+  "question.referenceAnswerRequired": "An open question needs a reference answer.",
+  "question.points": "Points",
 
   "assignments.title": "Assignments",
   "assignments.empty": "This cohort has no quiz assignments yet.",
@@ -161,6 +166,7 @@
   "exam.unanswered": "Not answered yet",
   "exam.selectOne": "Select one answer",
   "exam.selectMultiple": "Select all that apply",
+  "exam.typeYourAnswer": "Type your answer ({{points}} points)",
   "exam.loading": "Loading your exam…",
 
   "result.title": "Result",
@@ -178,6 +184,8 @@
   "review.incorrect": "Incorrect",
   "review.yourAnswer": "Your answer",
   "review.correctAnswer": "Correct answer",
+  "review.pointsEarned": "{{earned}} / {{points}} points",
+  "review.aiFeedback": "AI feedback",
 
   "scores.title": "Scores",
   "scores.backToCohort": "← Back to cohort",
