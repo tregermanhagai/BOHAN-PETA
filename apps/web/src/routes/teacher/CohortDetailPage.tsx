@@ -244,8 +244,13 @@ export function CohortDetailPage() {
           return (
           <div className="list-row" key={a.id}>
             <div>
-              <div className="list-row-title">
-                <Link to={`/quizzes/${a.quizTemplateId}`}>{a.quizTemplateTitle}</Link>
+              <div className="list-row-title-row">
+                <div className="list-row-title">
+                  <Link to={`/quizzes/${a.quizTemplateId}`}>{a.quizTemplateTitle}</Link>
+                </div>
+                <button className="link danger" type="button" onClick={() => onDeleteAssignment(a)}>
+                  {t("common.delete")}
+                </button>
               </div>
               <div className="list-row-meta">
                 {a.openAt ?? "—"} – {a.closeAt ?? "—"} · {t("assignments.maxAttempts")}: {a.maxAttempts}
@@ -253,23 +258,22 @@ export function CohortDetailPage() {
               </div>
             </div>
             <div>
-              <div className="access-code">{a.accessCode}</div>
+              <div className="access-code-row">
+                <div className="access-code">{a.accessCode}</div>
+                <button className="link" type="button" onClick={() => onCopyAccessCode(a.accessCode)}>
+                  {copiedCode === a.accessCode ? t("assignments.copied") : t("assignments.copyCode")}
+                </button>
+              </div>
               <div className="list-row-meta">{t("assignments.accessCodeHint")}</div>
               <div className="list-row-meta">{t("assignments.joinUrl")}:</div>
-              <a className="join-url-link" href={joinUrl} target="_blank" rel="noreferrer">
-                {joinUrl}
-              </a>
-            </div>
-            <div className="assignment-actions">
-              <button className="link" type="button" onClick={() => onCopyAccessCode(a.accessCode)}>
-                {copiedCode === a.accessCode ? t("assignments.copied") : t("assignments.copyCode")}
-              </button>
-              <button className="link" type="button" onClick={onCopyJoinUrl}>
-                {copiedJoinUrl ? t("assignments.copied") : t("assignments.copyCode")}
-              </button>
-              <button className="link danger" type="button" onClick={() => onDeleteAssignment(a)}>
-                {t("common.delete")}
-              </button>
+              <div className="join-url-row">
+                <a className="join-url-link" href={joinUrl} target="_blank" rel="noreferrer">
+                  {joinUrl}
+                </a>
+                <button className="link" type="button" onClick={onCopyJoinUrl}>
+                  {copiedJoinUrl ? t("assignments.copied") : t("assignments.copyCode")}
+                </button>
+              </div>
             </div>
           </div>
           );

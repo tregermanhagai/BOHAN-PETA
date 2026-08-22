@@ -355,6 +355,12 @@ h1 {
   font-weight: 600;
 }
 
+.list-row-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .list-row-title a {
   color: inherit;
   text-decoration: none;
@@ -722,17 +728,22 @@ h1 {
   color: var(--accent-strong);
 }
 
-/* One shared column for every assignment-row action link (copy code,
-   copy join link, delete) so they line up on the same edge regardless
-   of how long the neighboring text (access code, join URL) happens to
-   be — those used to sit inline right after their related text, which
-   pushed each button to a different position depending on that text's
-   length. */
-.assignment-actions {
+/* justify-content: space-between (not just a plain flex row) is what
+   actually keeps the copy button on the same edge across rows — it
+   anchors the button to this row's own far edge regardless of how long
+   the text next to it (access code vs. full join URL) happens to be,
+   instead of the button's position depending on that text's width. */
+.access-code-row,
+.join-url-row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.join-url-row {
+  margin-block-start: 8px;
+  flex-wrap: wrap;
 }
 
 .join-url-link {
