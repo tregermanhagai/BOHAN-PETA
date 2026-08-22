@@ -25,8 +25,35 @@ function defaultCloseAt(): string {
   return toDatetimeLocalValue(new Date(Date.now() + HOURS_48_MS));
 }
 
+const ISRAEL_TZ = "Asia/Jerusalem";
+
+/**
+ * Readable "<weekday> <day> <month> <year> <hour>:<minute>" in Israel time,
+ * regardless of the viewer's own device timezone — teachers/students are
+ * assumed to be in Israel, and the raw ISO/UTC string this replaced (e.g.
+ * "2026-08-22T17:50:00.000Z") was neither localized nor easily readable.
+ * Built from formatToParts rather than the locale's default .format()
+ * output to drop Hebrew's grammatical connectors ("ב", "בשעה", commas)
+ * that the default phrasing adds, matching the plain requested style.
+ */
+function formatIsraelDateTime(iso: string, locale: string): string {
+  const date = new Date(iso);
+  const parts = new Intl.DateTimeFormat(locale, {
+    timeZone: ISRAEL_TZ,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("weekday")} ${get("day")} ${get("month")} ${get("year")} ${get("hour")}:${get("minute")}`;
+}
+
 export function CohortDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -253,7 +280,9 @@ export function CohortDetailPage() {
                 </button>
               </div>
               <div className="list-row-meta">
-                {a.openAt ?? "—"} – {a.closeAt ?? "—"} · {t("assignments.maxAttempts")}: {a.maxAttempts}
+                {a.openAt ? formatIsraelDateTime(a.openAt, i18n.language) : "—"} –{" "}
+                {a.closeAt ? formatIsraelDateTime(a.closeAt, i18n.language) : "—"} · {t("assignments.maxAttempts")}:{" "}
+                {a.maxAttempts}
                 {quiz && <> · {t("assignments.quizDuration", { minutes: quiz.durationMinutes })}</>}
               </div>
             </div>
