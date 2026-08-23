@@ -85,32 +85,47 @@ body {
   white-space: nowrap;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 @media (max-width: 560px) {
   .topbar {
     padding: 10px 12px;
     gap: 8px;
+    /* Below this width there just isn't room for the brand and every nav
+       link/button on one line — rather than keep shrinking text and
+       still risking a mid-phrase wrap (e.g. "צור קשר" breaking across two
+       lines), deliberately split into two rows: brand alone on top,
+       every action below it. */
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .brand {
+    flex: 1 0 100%;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  .topbar-actions {
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 6px;
   }
 
   .topbar a,
   .topbar button {
     font-size: 0.8rem;
-  }
-
-  .brand {
-    font-size: 0.85rem;
+    white-space: nowrap;
   }
 
   .lang-switch button {
     font-size: 0.68rem;
     padding: 3px 7px;
-  }
-}
-
-@media (max-width: 360px) {
-  /* Last resort once even the shrunk sizes above don't fit — drop the
-     brand text entirely rather than let anything wrap or overflow. */
-  .brand {
-    display: none;
   }
 }
 

@@ -12,7 +12,7 @@ export function TopBar() {
       <Link className="brand" to="/">
         {t("app.name")}
       </Link>
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div className="topbar-actions">
         {isAuthenticated ? (
           <>
             <Link to="/cohorts">{t("nav.cohorts")}</Link>
@@ -33,7 +33,7 @@ export function TopBar() {
             aria-pressed={i18n.language === "he"}
             onClick={() => setLanguage("he")}
           >
-            עברית
+            עב
           </button>
           <button
             type="button"
