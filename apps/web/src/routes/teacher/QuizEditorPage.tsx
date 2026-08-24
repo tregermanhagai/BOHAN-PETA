@@ -381,7 +381,7 @@ export function QuizEditorPage() {
           <p className="muted">{t("question.empty")}</p>
         )}
 
-        {quiz.questions.map((q) =>
+        {quiz.questions.map((q, index) =>
           editingQuestionId === q.id ? (
             <div className="question-card" key={q.id}>
               <QuestionForm
@@ -400,7 +400,7 @@ export function QuizEditorPage() {
             <div className="question-card" key={q.id}>
               <div className="question-card-head">
                 <div className="question-text" dir="auto">
-                  {q.text}
+                  <span className="question-number">{index + 1}.</span> {q.text}
                 </div>
                 <div className="form-actions">
                   <button className="link" type="button" onClick={() => setEditingQuestionId(q.id)}>
