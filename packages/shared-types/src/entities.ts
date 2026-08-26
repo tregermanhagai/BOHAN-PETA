@@ -21,6 +21,7 @@ export interface Cohort {
   id: string;
   teacherId: string;
   name: string;
+  description: string | null;
   startDate: string | null;
   endDate: string | null;
   /** F-20: cohorts are archived, not deleted, to preserve historical scores. */

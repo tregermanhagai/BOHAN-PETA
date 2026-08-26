@@ -186,6 +186,11 @@ export function CohortDetailPage() {
           </button>
         </div>
       </div>
+      {cohort.description && (
+        <p className="cohort-description" dir="auto">
+          {cohort.description}
+        </p>
+      )}
 
       <div className="card">
         <h2>{t("assignments.create")}</h2>

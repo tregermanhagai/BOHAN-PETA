@@ -10,6 +10,7 @@ export function CohortsPage() {
   const [cohorts, setCohorts] = useState<CohortResponse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -38,11 +39,13 @@ export function CohortsPage() {
     try {
       const body: CreateCohortRequest = {
         name,
+        description: description.trim() || null,
         startDate: startDate || null,
         endDate: endDate || null,
       };
       await api.post<CohortResponse>("/cohorts", body);
       setName("");
+      setDescription("");
       setStartDate("");
       setEndDate("");
       await load();
@@ -84,6 +87,16 @@ export function CohortsPage() {
             <input id="cohort-name" required value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="field">
+            <label htmlFor="cohort-description">{t("cohorts.description")}</label>
+            <textarea
+              id="cohort-description"
+              rows={2}
+              placeholder={t("cohorts.descriptionPlaceholder")}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div className="field">
             <label htmlFor="start-date">{t("cohorts.startDate")}</label>
             <input
               id="start-date"
@@ -116,6 +129,11 @@ export function CohortsPage() {
                 <div className="cohort-dates">
                   {c.startDate ?? "—"} – {c.endDate ?? "—"}
                 </div>
+                {c.description && (
+                  <div className="cohort-description" dir="auto">
+                    {c.description}
+                  </div>
+                )}
               </div>
               <div className="form-actions">
                 <button className="link" type="button" onClick={() => toggleArchive(c)}>

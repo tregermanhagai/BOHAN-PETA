@@ -35,6 +35,7 @@ model Cohort {
   teacherId String    @map("teacher_id")
   teacher   Teacher   @relation(fields: [teacherId], references: [id])
   name      String
+  description String?
   startDate DateTime? @map("start_date") @db.Date
   endDate   DateTime? @map("end_date") @db.Date
   // F-20: cohorts are archived, not deleted, so historical scores stay intact.

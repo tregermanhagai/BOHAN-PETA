@@ -19,6 +19,22 @@ test.describe("POST /cohorts", () => {
     expect(body.id).toEqual(expect.any(String));
   });
 
+  test("creates a cohort with a description", async ({ authedRequest }) => {
+    const res = await authedRequest.post("/cohorts", {
+      data: { name: uniqueCohortName(), description: "Evening Selenium class, room 4" },
+    });
+
+    expect(res.status()).toBe(201);
+    const body = await res.json();
+    expect(body.description).toBe("Evening Selenium class, room 4");
+  });
+
+  test("defaults description to null when omitted", async ({ authedRequest }) => {
+    const res = await authedRequest.post("/cohorts", { data: { name: uniqueCohortName() } });
+    const body = await res.json();
+    expect(body.description).toBeNull();
+  });
+
   test("creates a cohort with start/end dates", async ({ authedRequest }) => {
     const res = await authedRequest.post("/cohorts", {
       data: { name: uniqueCohortName(), startDate: "2026-01-05", endDate: "2026-03-20" },
@@ -123,6 +139,14 @@ test.describe("PATCH /cohorts/:id", () => {
     const res = await authedRequest.patch(`/cohorts/${created.id}`, { data: { name: newName } });
     expect(res.status()).toBe(200);
     expect((await res.json()).name).toBe(newName);
+  });
+
+  test("updates the cohort description", async ({ authedRequest }) => {
+    const created = await (await authedRequest.post("/cohorts", { data: { name: uniqueCohortName() } })).json();
+
+    const res = await authedRequest.patch(`/cohorts/${created.id}`, { data: { description: "Updated notes" } });
+    expect(res.status()).toBe(200);
+    expect((await res.json()).description).toBe("Updated notes");
   });
 
   test("rejects moving the end date before an existing start date", async ({ authedRequest }) => {

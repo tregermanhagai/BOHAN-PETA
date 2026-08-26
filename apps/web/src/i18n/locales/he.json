@@ -32,6 +32,8 @@
   "cohorts.title": "מחזורים",
   "cohorts.create": "מחזור חדש",
   "cohorts.name": "שם המחזור",
+  "cohorts.description": "תיאור (לא חובה)",
+  "cohorts.descriptionPlaceholder": "לדוגמה: הכיתה איתה אנחנו עובדים, פרטים רלוונטיים נוספים...",
   "cohorts.startDate": "תאריך התחלה",
   "cohorts.endDate": "תאריך סיום",
   "cohorts.dateRangeInvalid": "תאריך הסיום לא יכול להיות לפני תאריך ההתחלה.",

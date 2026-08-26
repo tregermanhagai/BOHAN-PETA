@@ -398,6 +398,13 @@ h1 {
   color: var(--ink-soft);
 }
 
+.cohort-description {
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  margin-block-start: 4px;
+  white-space: pre-wrap;
+}
+
 .pill {
   font-size: 0.72rem;
   padding: 2px 8px;

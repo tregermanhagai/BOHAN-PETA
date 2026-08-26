@@ -7,6 +7,10 @@ export class CreateCohortDto implements CreateCohortRequest {
   name!: string;
 
   @IsOptional()
+  @IsString()
+  description?: string | null;
+
+  @IsOptional()
   @IsISO8601()
   startDate?: string | null;
 

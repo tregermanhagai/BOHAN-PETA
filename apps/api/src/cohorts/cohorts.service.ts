@@ -18,6 +18,7 @@ function toResponse(row: CohortRow): CohortResponse {
     id: row.id,
     teacherId: row.teacherId,
     name: row.name,
+    description: row.description,
     startDate: row.startDate ? row.startDate.toISOString().slice(0, 10) : null,
     endDate: row.endDate ? row.endDate.toISOString().slice(0, 10) : null,
     archived: row.archived,
@@ -34,6 +35,7 @@ export class CohortsService {
       data: {
         teacherId,
         name: dto.name,
+        description: dto.description ?? null,
         startDate: dto.startDate ? new Date(dto.startDate) : null,
         endDate: dto.endDate ? new Date(dto.endDate) : null,
       },
@@ -67,6 +69,7 @@ export class CohortsService {
       where: { id },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
         ...(dto.startDate !== undefined
           ? { startDate: dto.startDate ? new Date(dto.startDate) : null }
           : {}),

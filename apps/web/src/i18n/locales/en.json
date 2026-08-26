@@ -32,6 +32,8 @@
   "cohorts.title": "Cohorts",
   "cohorts.create": "New cohort",
   "cohorts.name": "Cohort name",
+  "cohorts.description": "Description (optional)",
+  "cohorts.descriptionPlaceholder": "e.g. which class this is, or other useful notes...",
   "cohorts.startDate": "Start date",
   "cohorts.endDate": "End date",
   "cohorts.dateRangeInvalid": "End date must not be before the start date.",

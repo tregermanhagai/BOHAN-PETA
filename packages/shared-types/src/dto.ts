@@ -32,12 +32,14 @@ export interface AuthResponse {
 
 export interface CreateCohortRequest {
   name: string;
+  description?: string | null;
   startDate?: string | null;
   endDate?: string | null;
 }
 
 export interface UpdateCohortRequest {
   name?: string;
+  description?: string | null;
   startDate?: string | null;
   endDate?: string | null;
   archived?: boolean;
