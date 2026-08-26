@@ -238,6 +238,12 @@ model AttemptAnswer {
   // Only ever shown to the student when the quiz's reveal_answer_key is
   // on — same gating as AnswerOption.isCorrect.
   aiFeedback         String?  @map("ai_feedback")
+  // Teacher's manual correction of points earned for this question,
+  // applied post-submission — null means "use the normal derived/AI
+  // value" (the vast majority of answers, untouched by a teacher);
+  // non-null wins over both isCorrectAnswer() and aiScore. Works
+  // uniformly across all question types.
+  overridePoints     Decimal? @map("override_points") @db.Decimal(5, 2)
 
   // Lets answer-saving be a plain upsert keyed on (attempt, question)
   // rather than "find existing row, then update or create".

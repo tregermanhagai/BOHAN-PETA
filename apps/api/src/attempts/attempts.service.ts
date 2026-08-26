@@ -47,6 +47,44 @@ function isCorrectAnswer(question: QuestionWithOptions, selectedOptionIds: strin
   return true;
 }
 
+/**
+ * Single source of truth for "how many points did this question earn" —
+ * a teacher's overridePoints wins over everything else when present;
+ * otherwise falls back to the pre-existing per-type derivation (AI score
+ * for open questions, exact-match for single/multi). Used by both
+ * finalize-time scoring and the post-submission grading endpoints, so
+ * the two can never drift apart.
+ */
+function effectivePointsEarned(question: QuestionWithOptions, answer: AttemptAnswerRow | undefined): number {
+  if (answer?.overridePoints != null) return Number(answer.overridePoints);
+  if (question.type === "open") {
+    return answer?.aiScore != null ? Number(answer.aiScore) : 0;
+  }
+  return isCorrectAnswer(question, answer?.selectedOptionIds ?? []) ? question.points : 0;
+}
+
+function computeScore(
+  questionOrder: string[],
+  questions: Map<string, QuestionWithOptions>,
+  answersByQuestion: Map<string, AttemptAnswerRow>,
+): number {
+  let earned = 0;
+  let maxTotal = 0;
+  for (const qid of questionOrder) {
+    const q = questions.get(qid);
+    if (!q) {
+      // Question was deleted mid-attempt before being answered — still
+      // counts toward the denominator, same as the old
+      // questionOrder.length-based total did unconditionally.
+      maxTotal += FALLBACK_POINTS_FOR_MISSING_QUESTION;
+      continue;
+    }
+    maxTotal += q.points;
+    earned += effectivePointsEarned(q, answersByQuestion.get(qid));
+  }
+  return maxTotal > 0 ? Math.round((earned / maxTotal) * 10000) / 100 : 0;
+}
+
 /** Attempt.optionOrder is a Prisma Json column: { [questionId]: optionId[] }, captured once at join (students.service.ts). */
 function optionOrderFor(attempt: AttemptRow, questionId: string): string[] {
   const map = attempt.optionOrder as Record<string, string[]> | null;
@@ -137,17 +175,112 @@ export class AttemptsService {
     if (!attempt.submittedAt) {
       throw new BadRequestException("This exam is still in progress");
     }
-    const template = attempt.quizAssignment.quizTemplate;
+    return this.buildReview(attempt);
+  }
+
+  /**
+   * Teacher-facing equivalent of getReview — same payload shape, but
+   * ownership-checked against the teacher rather than trusting the
+   * attempt UUID as a bearer credential. Powers the grading screen.
+   */
+  async getGradingForTeacher(teacherId: string, attemptId: string): Promise<AttemptReviewResponse> {
+    const attempt = await this.loadOwnedAttemptOrThrow(teacherId, attemptId);
+    if (!attempt.submittedAt) {
+      throw new BadRequestException("This exam is still in progress");
+    }
+    return this.buildReview(attempt, true);
+  }
+
+  /**
+   * Applies teacher-set point overrides for one or more questions in an
+   * attempt, recomputes the overall score via the same computeScore used
+   * at submission time, and persists it. A null `points` value clears
+   * that question's override, reverting to the normal derived/AI value.
+   */
+  async updateGrading(
+    teacherId: string,
+    attemptId: string,
+    overrides: Array<{ questionId: string; points: number | null }>,
+    notifyStudent = false,
+  ): Promise<AttemptReviewResponse> {
+    const attempt = await this.loadOwnedAttemptOrThrow(teacherId, attemptId);
+    if (!attempt.submittedAt) {
+      throw new BadRequestException("This exam is still in progress");
+    }
+
     const questions = await this.loadQuestionsById(attempt.questionOrder);
+    for (const o of overrides) {
+      if (!attempt.questionOrder.includes(o.questionId)) {
+        throw new BadRequestException(`Question ${o.questionId} is not part of this attempt`);
+      }
+      const q = questions.get(o.questionId);
+      if (o.points !== null && q && o.points > q.points) {
+        throw new BadRequestException(`Override for question ${o.questionId} exceeds its maximum of ${q.points} points`);
+      }
+    }
+
+    await Promise.all(
+      overrides.map((o) =>
+        this.prisma.attemptAnswer.upsert({
+          where: { attemptId_questionId: { attemptId, questionId: o.questionId } },
+          update: { overridePoints: o.points },
+          create: { attemptId, questionId: o.questionId, selectedOptionIds: [], overridePoints: o.points },
+        }),
+      ),
+    );
+
     const answersByQuestion = await this.loadAnswersByQuestion(attemptId);
+    const score = computeScore(attempt.questionOrder, questions, answersByQuestion);
+    const updated = await this.prisma.attempt.update({
+      where: { id: attemptId },
+      data: { score },
+      include: { quizAssignment: { include: { quizTemplate: true } }, student: true },
+    });
+
+    if (notifyStudent && updated.student.email) {
+      const passed = score >= Number(updated.quizAssignment.quizTemplate.passScore);
+      // Fire-and-forget, same as the post-submission result email — the
+      // teacher's save action shouldn't wait on SMTP round-trip time.
+      void this.mail.sendGradeUpdatedEmail({
+        to: updated.student.email,
+        studentName: `${updated.student.firstName} ${updated.student.lastName}`,
+        quizTitle: updated.quizAssignment.quizTemplate.title,
+        score,
+        passed,
+        reviewToken: updated.id,
+      });
+    }
+
+    return this.buildReview(updated, true);
+  }
+
+  /** Removes a single attempt (e.g. a test student's exam run) — answers cascade automatically. */
+  async removeAttempt(teacherId: string, attemptId: string): Promise<void> {
+    await this.loadOwnedAttemptOrThrow(teacherId, attemptId);
+    await this.prisma.attempt.delete({ where: { id: attemptId } });
+  }
+
+  /**
+   * alwaysReveal is true for the teacher-facing grading view — the quiz's
+   * revealAnswerKey setting controls what a STUDENT sees on their own
+   * review page, not what the teacher can see while grading; a teacher
+   * must always be able to see the answer key to make an informed
+   * override decision.
+   */
+  private async buildReview(attempt: AttemptWithRelations, alwaysReveal = false): Promise<AttemptReviewResponse> {
+    const template = attempt.quizAssignment.quizTemplate;
+    const reveal = alwaysReveal || template.revealAnswerKey;
+    const questions = await this.loadQuestionsById(attempt.questionOrder);
+    const answersByQuestion = await this.loadAnswersByQuestion(attempt.id);
 
     const reviewQuestions = attempt.questionOrder.map((qid) => {
       const q = questions.get(qid)!;
       const answer = answersByQuestion.get(qid);
       const orderedOptions = reorderById(q.options, optionOrderFor(attempt, qid));
+      const pointsEarned = effectivePointsEarned(q, answer);
+      const overridePoints = answer?.overridePoints != null ? Number(answer.overridePoints) : null;
 
       if (q.type === "open") {
-        const pointsEarned = answer?.aiScore ? Number(answer.aiScore) : 0;
         return {
           id: q.id,
           text: q.text,
@@ -157,15 +290,13 @@ export class AttemptsService {
           answerText: answer?.answerText ?? null,
           points: q.points,
           pointsEarned,
-          // Only ever shown once the quiz reveals the answer key — same
-          // gating as AnswerOption.isCorrect below.
-          ...(template.revealAnswerKey ? { aiFeedback: answer?.aiFeedback ?? null } : {}),
+          overridePoints,
+          ...(reveal ? { aiFeedback: answer?.aiFeedback ?? null } : {}),
           correct: pointsEarned === q.points,
         };
       }
 
       const selected = answer?.selectedOptionIds ?? [];
-      const correct = isCorrectAnswer(q, selected);
       return {
         id: q.id,
         text: q.text,
@@ -173,13 +304,14 @@ export class AttemptsService {
         options: orderedOptions.map((o) => ({
           id: o.id,
           text: o.text,
-          ...(template.revealAnswerKey ? { isCorrect: o.isCorrect } : {}),
+          ...(reveal ? { isCorrect: o.isCorrect } : {}),
         })),
         selectedOptionIds: selected,
         answerText: null,
         points: q.points,
-        pointsEarned: correct ? q.points : 0,
-        correct,
+        pointsEarned,
+        overridePoints,
+        correct: pointsEarned === q.points,
       };
     });
 
@@ -193,6 +325,17 @@ export class AttemptsService {
       revealAnswerKey: template.revealAnswerKey,
       questions: reviewQuestions,
     };
+  }
+
+  private async loadOwnedAttemptOrThrow(teacherId: string, attemptId: string): Promise<AttemptWithRelations> {
+    const attempt = await this.prisma.attempt.findFirst({
+      where: { id: attemptId, quizAssignment: { quizTemplate: { teacherId } } },
+      include: { quizAssignment: { include: { quizTemplate: true } }, student: true },
+    });
+    if (!attempt) {
+      throw new NotFoundException("Attempt not found");
+    }
+    return attempt;
   }
 
   private buildResult(attempt: AttemptWithRelations): AttemptResultResponse {
@@ -236,27 +379,7 @@ export class AttemptsService {
     // philosophy as the result email a few lines down.
     await this.gradeOpenQuestions(attempt.id, attempt.quizAssignment.quizTemplate.language, questions);
     const answersByQuestion = await this.loadAnswersByQuestion(attempt.id);
-
-    let earned = 0;
-    let maxTotal = 0;
-    for (const qid of attempt.questionOrder) {
-      const q = questions.get(qid);
-      if (!q) {
-        // Question was deleted mid-attempt before being answered — still
-        // counts toward the denominator, same as the old
-        // questionOrder.length-based total did unconditionally.
-        maxTotal += FALLBACK_POINTS_FOR_MISSING_QUESTION;
-        continue;
-      }
-      maxTotal += q.points;
-      const answer = answersByQuestion.get(qid);
-      if (q.type === "open") {
-        earned += answer?.aiScore != null ? Number(answer.aiScore) : 0;
-      } else if (isCorrectAnswer(q, answer?.selectedOptionIds ?? [])) {
-        earned += q.points;
-      }
-    }
-    const score = maxTotal > 0 ? Math.round((earned / maxTotal) * 10000) / 100 : 0;
+    const score = computeScore(attempt.questionOrder, questions, answersByQuestion);
 
     const finalized = await this.prisma.attempt.update({
       where: { id: attempt.id },

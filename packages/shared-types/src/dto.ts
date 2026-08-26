@@ -228,10 +228,12 @@ export interface AttemptReviewQuestion {
   /** Open questions only. */
   answerText: string | null;
   points: number;
-  /** Points actually earned — equals `points` or 0 for single/multi (binary), 0..points for open (AI-graded). */
+  /** Points actually earned — equals `points` or 0 for single/multi (binary), 0..points for open (AI-graded), or the teacher's override when one is set. */
   pointsEarned: number;
   /** Only present when the quiz's reveal_answer_key is on (open questions only, F-07b-equivalent). */
   aiFeedback?: string | null;
+  /** Non-null when a teacher has manually corrected this question's grade — overrides the normal derived/AI value. */
+  overridePoints: number | null;
   correct: boolean;
 }
 
@@ -242,6 +244,22 @@ export interface AttemptReviewResponse {
   endedReason: AttemptEndedReason;
   revealAnswerKey: boolean;
   questions: AttemptReviewQuestion[];
+}
+
+// ---------------------------------------------------------------
+// Teacher grade overrides (post-submission correction)
+// ---------------------------------------------------------------
+
+export interface AttemptGradingOverrideItem {
+  questionId: string;
+  /** Points to award for this question, or null to clear the override and revert to the derived/AI value. */
+  points: number | null;
+}
+
+export interface UpdateAttemptGradingRequest {
+  overrides: AttemptGradingOverrideItem[];
+  /** When true, emails the student their updated score after applying the overrides. */
+  notifyStudent?: boolean;
 }
 
 // ---------------------------------------------------------------

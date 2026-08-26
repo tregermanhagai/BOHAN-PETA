@@ -25,6 +25,8 @@ export interface ExamResultEmailInput {
   reviewToken: string;
 }
 
+export type GradeUpdatedEmailInput = ExamResultEmailInput;
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -80,6 +82,41 @@ export class MailService {
       });
     } catch (err) {
       this.logger.error(`Failed to send result email to ${input.to}: ${(err as Error).message}`);
+    }
+  }
+
+  async sendGradeUpdatedEmail(input: GradeUpdatedEmailInput): Promise<void> {
+    if (!this.transporter || !this.fromAddress) return;
+
+    const reviewUrl = `${this.frontendUrl}/review/${input.reviewToken}`;
+    const resultText = input.passed ? "עברת את הבוחן" : "לא עברת את הבוחן";
+    const displayScore = Math.round(input.score);
+
+    try {
+      await this.transporter.sendMail({
+        from: this.fromAddress,
+        to: input.to,
+        subject: `הציון שלך בבוחן "${input.quizTitle}" עודכן`,
+        text: [
+          `שלום ${input.studentName},`,
+          "",
+          `הציון שלך בבוחן "${input.quizTitle}" עודכן על ידי המורה.`,
+          `הציון המעודכן: ${displayScore}%`,
+          resultText,
+          "",
+          `לסקירת התשובות שלך: ${reviewUrl}`,
+        ].join("\n"),
+        html: `
+          <div dir="rtl" style="font-family: sans-serif;">
+            <p>שלום ${input.studentName},</p>
+            <p>הציון שלך בבוחן "${input.quizTitle}" עודכן על ידי המורה.</p>
+            <p>הציון המעודכן: <strong>${displayScore}%</strong><br />${resultText}</p>
+            <p><a href="${reviewUrl}">לסקירת התשובות שלך</a></p>
+          </div>
+        `,
+      });
+    } catch (err) {
+      this.logger.error(`Failed to send grade-updated email to ${input.to}: ${(err as Error).message}`);
     }
   }
 }

@@ -10,6 +10,7 @@ import { CohortDetailPage } from "./routes/teacher/CohortDetailPage";
 import { ScoresPage } from "./routes/teacher/ScoresPage";
 import { QuizzesPage } from "./routes/teacher/QuizzesPage";
 import { QuizEditorPage } from "./routes/teacher/QuizEditorPage";
+import { AttemptGradingPage } from "./routes/teacher/AttemptGradingPage";
 import { JoinPage } from "./routes/student/JoinPage";
 import { ExamPage } from "./routes/student/ExamPage";
 import { ResultPage } from "./routes/student/ResultPage";
@@ -66,6 +67,14 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <QuizEditorPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/attempts/:id/grading"
+          element={
+            <RequireAuth>
+              <AttemptGradingPage />
             </RequireAuth>
           }
         />
