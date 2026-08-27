@@ -122,7 +122,7 @@ export class QuizTemplatesService {
         teacherId,
         title: dto.title,
         language,
-        difficulty: dto.difficulty ?? null,
+        difficulty: dto.difficulty ?? "easy",
         passFeedbackText: feedback.pass,
         failFeedbackText: feedback.fail,
       },

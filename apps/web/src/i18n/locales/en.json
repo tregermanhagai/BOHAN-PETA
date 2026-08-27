@@ -81,7 +81,7 @@
   "quiz.unpublish": "Return to Edit Mode",
   "quiz.publishHint": "Needs at least 3 questions, each with a valid correct answer, to publish.",
 
-  "ai.generate": "Generate with AI",
+  "ai.generate": "Generate questions with AI",
   "ai.hint": "Generated questions are added below as drafts, alongside any manual ones — review and edit them before publishing.",
   "ai.topic": "Topic",
   "ai.topicPlaceholder": "e.g. QA role in a Scrum team",

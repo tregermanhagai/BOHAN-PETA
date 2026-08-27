@@ -12,6 +12,7 @@ test.describe("POST /quiz-templates", () => {
       title: "New Quiz",
       teacherId: teacher.id,
       status: "draft",
+      difficulty: "easy",
       durationMinutes: 30,
       passScore: 60,
       revealAnswerKey: false,
