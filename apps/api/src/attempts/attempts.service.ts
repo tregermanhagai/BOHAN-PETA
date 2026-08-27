@@ -387,7 +387,7 @@ export class AttemptsService {
       include: { quizAssignment: { include: { quizTemplate: true } }, student: true },
     });
 
-    if (finalized.student.email) {
+    if (finalized.student.email && finalized.quizAssignment.quizTemplate.sendResultEmail) {
       const passed = score >= Number(finalized.quizAssignment.quizTemplate.passScore);
       // Best-effort: a student must never see an error just because SMTP
       // is unreachable — MailService already swallows its own failures,

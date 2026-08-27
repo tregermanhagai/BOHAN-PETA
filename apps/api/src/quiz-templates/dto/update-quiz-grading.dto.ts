@@ -24,5 +24,9 @@ export class UpdateQuizGradingDto implements UpdateQuizGradingRequest {
 
   @IsOptional()
   @IsBoolean()
+  sendResultEmail?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   revealAnswerKey?: boolean;
 }

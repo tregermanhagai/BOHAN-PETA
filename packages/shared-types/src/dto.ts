@@ -69,6 +69,7 @@ export interface UpdateQuizGradingRequest {
   passScore?: number;
   passFeedbackText?: string | null;
   failFeedbackText?: string | null;
+  sendResultEmail?: boolean;
   revealAnswerKey?: boolean;
 }
 

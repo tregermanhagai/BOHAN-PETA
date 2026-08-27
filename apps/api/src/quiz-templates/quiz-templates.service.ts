@@ -34,6 +34,7 @@ function toTemplateBase(row: QuizTemplateRow) {
     passScore: Number(row.passScore),
     passFeedbackText: row.passFeedbackText,
     failFeedbackText: row.failFeedbackText,
+    sendResultEmail: row.sendResultEmail,
     revealAnswerKey: row.revealAnswerKey,
     createdAt: row.createdAt.toISOString(),
   };
@@ -174,6 +175,7 @@ export class QuizTemplatesService {
         ...(dto.passScore !== undefined ? { passScore: dto.passScore } : {}),
         ...(dto.passFeedbackText !== undefined ? { passFeedbackText: dto.passFeedbackText } : {}),
         ...(dto.failFeedbackText !== undefined ? { failFeedbackText: dto.failFeedbackText } : {}),
+        ...(dto.sendResultEmail !== undefined ? { sendResultEmail: dto.sendResultEmail } : {}),
         ...(dto.revealAnswerKey !== undefined ? { revealAnswerKey: dto.revealAnswerKey } : {}),
       },
     });

@@ -41,6 +41,7 @@ export interface QuizTemplate {
   passScore: number;
   passFeedbackText: string | null;
   failFeedbackText: string | null;
+  sendResultEmail: boolean;
   revealAnswerKey: boolean;
   createdAt: string;
 }

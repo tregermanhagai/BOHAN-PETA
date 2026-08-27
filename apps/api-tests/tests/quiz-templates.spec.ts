@@ -15,6 +15,7 @@ test.describe("POST /quiz-templates", () => {
       difficulty: "easy",
       durationMinutes: 30,
       passScore: 60,
+      sendResultEmail: true,
       revealAnswerKey: false,
       questions: [],
     });
@@ -102,6 +103,7 @@ test.describe("PATCH /quiz-templates/:id and /grading", () => {
         passScore: 75,
         passFeedbackText: "Well done",
         failFeedbackText: "Try again",
+        sendResultEmail: false,
         revealAnswerKey: true,
       },
     });
@@ -112,6 +114,7 @@ test.describe("PATCH /quiz-templates/:id and /grading", () => {
       passScore: 75,
       passFeedbackText: "Well done",
       failFeedbackText: "Try again",
+      sendResultEmail: false,
       revealAnswerKey: true,
     });
   });

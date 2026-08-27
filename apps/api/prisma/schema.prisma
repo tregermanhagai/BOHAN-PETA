@@ -75,6 +75,7 @@ model QuizTemplate {
   passScore         Decimal        @default(60) @map("pass_score") @db.Decimal(5, 2)
   passFeedbackText  String?        @map("pass_feedback_text")
   failFeedbackText  String?        @map("fail_feedback_text")
+  sendResultEmail   Boolean        @default(true) @map("send_result_email")
   revealAnswerKey   Boolean        @default(false) @map("reveal_answer_key")
   createdAt         DateTime       @default(now()) @map("created_at")
 

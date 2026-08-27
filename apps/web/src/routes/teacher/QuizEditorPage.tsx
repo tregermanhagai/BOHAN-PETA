@@ -98,6 +98,7 @@ export function QuizEditorPage() {
         passScore: Number(form.get("passScore")),
         passFeedbackText: String(form.get("passFeedbackText") ?? ""),
         failFeedbackText: String(form.get("failFeedbackText") ?? ""),
+        sendResultEmail: form.get("sendResultEmail") === "on",
         revealAnswerKey: form.get("revealAnswerKey") === "on",
       });
       setGradingDirty(false);
@@ -311,6 +312,15 @@ export function QuizEditorPage() {
               name="failFeedbackText"
               defaultValue={quiz.failFeedbackText ?? defaultFailFeedback(quiz.language)}
             />
+          </div>
+          <div className="checkbox-row">
+            <input
+              id="sendResultEmail"
+              name="sendResultEmail"
+              type="checkbox"
+              defaultChecked={quiz.sendResultEmail}
+            />
+            <label htmlFor="sendResultEmail">{t("quiz.sendResultEmail")}</label>
           </div>
           <div className="checkbox-row">
             <input
