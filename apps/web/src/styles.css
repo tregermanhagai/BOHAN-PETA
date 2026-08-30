@@ -575,6 +575,12 @@ h1 {
   color: var(--ink-soft);
 }
 
+.question-count {
+  font-weight: 400;
+  font-size: 0.7em;
+  margin-inline-start: 8px;
+}
+
 .option-list {
   list-style: none;
   margin: 0;

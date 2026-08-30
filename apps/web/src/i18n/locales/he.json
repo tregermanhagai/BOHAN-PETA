@@ -97,6 +97,7 @@
   "ai.questionType.multi": "בחירה מרובה",
   "ai.questionType.mixed": "מעורב (הבינה המלאכותית תבחר לכל שאלה)",
   "ai.generateButton": "יצירת שאלות בעזרת AI",
+  "ai.generateDuration": "התהליך עשוי לקחת מספר דקות בודדות",
   "ai.generating": "יוצר שאלות…",
 
   "question.title": "שאלות",

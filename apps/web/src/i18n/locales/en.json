@@ -97,6 +97,7 @@
   "ai.questionType.multi": "Multiple select",
   "ai.questionType.mixed": "Mixed (AI decides per question)",
   "ai.generateButton": "Generate questions with AI",
+  "ai.generateDuration": "This can take a few minutes",
   "ai.generating": "Generating…",
 
   "question.title": "Questions",

@@ -378,14 +378,24 @@ export function QuizEditorPage() {
               </select>
             </div>
           </div>
-          <button className="secondary" type="submit" disabled={generating}>
-            {generating ? t("ai.generating") : t("ai.generateButton")}
-          </button>
+          <div className="form-actions">
+            <button className="secondary" type="submit" disabled={generating}>
+              {generating ? t("ai.generating") : t("ai.generateButton")}
+            </button>
+            <span className="muted">{t("ai.generateDuration")}</span>
+          </div>
         </form>
       </div>
 
       <div className="card">
-        <h2>{t("question.title")}</h2>
+        <h2>
+          {t("question.title")}
+          {quiz.questions.length > 0 && (
+            <span className="muted question-count">
+              {t("quizzes.questionCount", { count: quiz.questions.length })}
+            </span>
+          )}
+        </h2>
 
         {quiz.questions.length === 0 && editingQuestionId !== "new" && (
           <p className="muted">{t("question.empty")}</p>
